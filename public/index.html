@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tech Quiz Live</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<div class="bg"></div>
+<main class="shell">
+<section id="join" class="card join">
+  <div class="badge">LIVE TECH QUIZ</div><h1>Linear Data Structures</h1><p>Enter the game. Think fast. Score higher.</p>
+  <input id="code" placeholder="Quiz code" inputmode="numeric"><input id="name" placeholder="Your name">
+  <input id="reg" placeholder="Register number"><button id="joinBtn">JOIN QUIZ</button><div id="joinMsg" class="msg"></div>
+  <a class="hostLink" href="/host.html">Host screen</a>
+</section>
+<section id="lobby" class="card hidden"><div class="pulse"></div><h1>You're in!</h1><h2 id="playerName"></h2><p>Waiting for the host to start...</p><div class="bigStat"><span id="lobbyCount">0</span><small>players joined</small></div></section>
+<section id="game" class="hidden">
+  <header><div><b>TECH QUIZ</b><span id="qnum">1 / 50</span></div><div class="score">SCORE <strong id="score">0</strong></div></header>
+  <div class="timerWrap"><div id="timerBar"></div></div>
+  <div class="questionCard"><div id="timer" class="timer">20</div><h1 id="question"></h1></div>
+  <div id="options" class="options"></div><div id="status" class="status"></div>
+</section>
+<section id="final" class="card hidden"><div class="badge">FINAL RESULTS</div><h1>🏆 Quiz Complete</h1><div id="podium" class="podium"></div><div id="ranking"></div></section>
+</main>
+<script src="/socket.io/socket.io.js"></script><script src="app.js"></script></body></html>
