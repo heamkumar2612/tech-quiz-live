@@ -28,8 +28,8 @@ app.get("/", (req, res) => {
 const QUIZ_CODE =
   process.env.QUIZ_CODE || "482917";
 
-const QUESTION_TIME = 20;
-const READING_TIME = 5;
+const QUESTION_TIME = 15;
+const READING_TIME = 10;
 
 const MIN_CORRECT = 500;
 const SPEED_BONUS = 500;
