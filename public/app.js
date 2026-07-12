@@ -133,3 +133,36 @@ document.addEventListener("visibilitychange",()=>{
 
  });
 });
+window.addEventListener("blur", () => {
+  if (
+    !me ||
+    !current ||
+    answered ||
+    switchBlocked ||
+    visibilityReporting
+  ) {
+    return;
+  }
+
+  visibilityReporting = true;
+
+  socket.emit(
+    "player:visibilityViolation",
+    { index: current.index },
+    r => {
+      visibilityReporting = false;
+
+      if (!r?.ok) return;
+
+      if (r.blocked) {
+        switchBlocked = true;
+        disableOptions();
+        $("status").textContent =
+          "🚫 ANSWER BLOCKED - SCREEN SEARCH DETECTED";
+      } else {
+        $("status").textContent =
+          `⚠️ SCREEN SEARCH WARNING ${r.warnings}/2`;
+      }
+    }
+  );
+});
