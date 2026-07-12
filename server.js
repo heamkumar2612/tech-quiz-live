@@ -15,7 +15,10 @@ app.get("/", (req, res) => {
 });
 
 const QUIZ_CODE = process.env.QUIZ_CODE || "482917";
+
 const QUESTION_TIME = 20;
+const READING_TIME = 5;
+
 const MIN_CORRECT = 500;
 const SPEED_BONUS = 500;
 
@@ -54,6 +57,7 @@ const currentPayload = () => {
     question: q.question,
     options: q.options,
     duration: QUESTION_TIME,
+    readingTime: READING_TIME,
     startedAt: quiz.startedAt
   };
 };
@@ -69,13 +73,15 @@ function startQuestion() {
   clearTimeout(quiz.timer);
 
   quiz.answers = new Map();
-  quiz.startedAt = Date.now();
+
+  // 5-second reading time before answering starts
+  quiz.startedAt = Date.now() + READING_TIME * 1000;
 
   io.emit("question", currentPayload());
 
   quiz.timer = setTimeout(
     revealQuestion,
-    QUESTION_TIME * 1000 + 250
+    (READING_TIME + QUESTION_TIME) * 1000 + 250
   );
 }
 
@@ -165,7 +171,7 @@ io.on("connection", socket => {
         score: 0,
         correct: 0,
         answered: 0,
-        violations: {},
+        totalViolations: 0,
         socketId: socket.id
       });
 
@@ -274,7 +280,7 @@ io.on("connection", socket => {
     broadcastLobby();
   });
 
-  // APP SWITCH / TAB SWITCH DETECTION
+  // APP SWITCH / CIRCLE TO SEARCH DETECTION
   socket.on(
     "player:visibilityViolation",
     ({ index }, ack) => {
@@ -292,15 +298,11 @@ io.on("connection", socket => {
         return ack?.({ ok: false });
       }
 
-      if (!p.violations) {
-        p.violations = {};
-      }
-
-      p.violations[index] =
-        (p.violations[index] || 0) + 1;
+      p.totalViolations =
+        (p.totalViolations || 0) + 1;
 
       const warningCount =
-        p.violations[index];
+        p.totalViolations;
 
       players.set(socket.id, p);
 
@@ -344,12 +346,19 @@ io.on("connection", socket => {
         return ack?.({ ok: false });
       }
 
-      // BLOCK AFTER 2 APP SWITCHES
-      if (p.violations?.[quiz.index] >= 2) {
+      // BLOCK AFTER 2 TOTAL VIOLATIONS
+      if ((p.totalViolations || 0) >= 2) {
         return ack?.({
           ok: false,
-          error:
-            "Answer blocked: app switching detected"
+          error: "Answer blocked: app switching detected"
+        });
+      }
+
+      // BLOCK ANSWERING DURING 5-SECOND READING TIME
+      if (Date.now() < quiz.startedAt) {
+        return ack?.({
+          ok: false,
+          error: "Reading time - wait before answering"
         });
       }
 
@@ -384,8 +393,7 @@ io.on("connection", socket => {
       p.answered++;
 
       const correct =
-        option ===
-        questions[quiz.index].answer;
+        option === questions[quiz.index].answer;
 
       let points = 0;
 
