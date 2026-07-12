@@ -1,416 +1,696 @@
-const socket=io(); const $=id=>document.getElementById(id);
+const socket = io();
+const $ = id => document.getElementById(id);
 
-let me=null,current=null,answered=false,tick=null;
-let switchBlocked=false;
-let visibilityReporting=false;
+let me = null;
+let current = null;
+let answered = false;
+let tick = null;
 
-function show(id){
- ["join","lobby","game","final"].forEach(
-  x=>$(x).classList.toggle("hidden",x!==id)
- );
+// BLOCK IS ONLY FOR CURRENT QUESTION
+let questionBlocked = false;
+
+let visibilityReporting = false;
+
+
+// SHOW SECTION
+
+function show(id) {
+
+  ["join", "lobby", "game", "final"].forEach(
+    x => $(x).classList.toggle(
+      "hidden",
+      x !== id
+    )
+  );
+
 }
 
-$("joinBtn").onclick=()=>socket.emit(
- "player:join",
- {
-  code:$("code").value,
-  name:$("name").value,
-  registerNo:$("reg").value
- },
- r=>{
-  if(!r.ok){
-   $("joinMsg").textContent=r.error;
-   return;
+
+// PLAYER JOIN
+
+$("joinBtn").onclick = () => socket.emit(
+  "player:join",
+  {
+    code: $("code").value,
+    name: $("name").value,
+    registerNo: $("reg").value
+  },
+  r => {
+
+    if (!r?.ok) {
+
+      $("joinMsg").textContent =
+        r?.error || "Could not join";
+
+      return;
+
+    }
+
+
+    me = r.player;
+
+
+    $("playerName").textContent =
+      me.name;
+
+
+    $("joinMsg").textContent =
+      "";
+
+
+    show("lobby");
+
   }
-
-  me=r.player;
-  $("playerName").textContent=me.name;
-  show("lobby");
- }
 );
 
-socket.on("lobby:update",d=>
- $("lobbyCount").textContent=d.count
-);
 
-socket.on("quiz:started",()=>{
- $("status").textContent="Get ready...";
- show("game");
+// LOBBY UPDATE
+
+socket.on("lobby:update", d => {
+
+  $("lobbyCount").textContent =
+    d.count;
+
+});
+
+
+// QUIZ STARTED
+
+socket.on("quiz:started", () => {
+
+  $("status").textContent =
+    "Get ready...";
+
+
+  show("game");
+
 });
 
 
 // TIMER + 5 SECOND READING TIME
 
-function runTimer(payload){
- clearInterval(tick);
+function runTimer(payload) {
 
- const answerStart=payload.startedAt;
- const answerEnd=answerStart+payload.duration*1000;
-
- disableOptions();
-
- tick=setInterval(()=>{
-
-  const now=Date.now();
-
-  // KEEP BLOCK MESSAGE AND OPTIONS BLOCKED
-  if(switchBlocked){
-   disableOptions();
-   return;
-  }
-
-  // 5 SECOND READING TIME
-  if(now<answerStart){
-
-   const readingLeft=Math.ceil(
-    (answerStart-now)/1000
-   );
-
-   $("timer").textContent=readingLeft;
-
-   $("timerBar").style.transform=
-    `scaleX(${readingLeft/payload.readingTime})`;
-
-   if(
-    !$("status").textContent.includes("WARNING")
-   ){
-    $("status").textContent=
-     `📖 READ QUESTION - ${readingLeft}`;
-   }
-
-   return;
-  }
+  clearInterval(tick);
 
 
-  // 20 SECOND ANSWERING TIME
+  const answerStart =
+    payload.startedAt;
 
-  const left=Math.max(
-   0,
-   (answerEnd-now)/1000
-  );
 
-  $("timer").textContent=Math.ceil(left);
+  const answerEnd =
+    answerStart +
+    payload.duration * 1000;
 
-  $("timerBar").style.transform=
-   `scaleX(${left/payload.duration})`;
 
-  if(!answered){
+  disableOptions();
 
-   document
-    .querySelectorAll(".option")
-    .forEach(b=>b.disabled=false);
 
-   if(
-    !$("status").textContent.includes("WARNING")
-   ){
-    $("status").textContent=
-     "Choose your answer";
-   }
-  }
+  tick = setInterval(() => {
 
-  if(left<=0){
+    const now =
+      Date.now();
 
-   clearInterval(tick);
 
-   disableOptions();
+    // CURRENT QUESTION BLOCKED
 
-   $("status").textContent=
-    answered
-     ?"Answer locked!"
-     :"TIME UP!";
-  }
+    if (questionBlocked) {
 
- },50);
+      disableOptions();
+
+      return;
+
+    }
+
+
+    // 5 SECOND READING TIME
+
+    if (now < answerStart) {
+
+      const readingLeft =
+        Math.ceil(
+          (answerStart - now) / 1000
+        );
+
+
+      $("timer").textContent =
+        readingLeft;
+
+
+      $("timerBar").style.transform =
+        `scaleX(${readingLeft / payload.readingTime})`;
+
+
+      $("status").textContent =
+        `📖 READ QUESTION - ${readingLeft}`;
+
+
+      return;
+
+    }
+
+
+    // 20 SECOND ANSWERING TIME
+
+    const left =
+      Math.max(
+        0,
+        (answerEnd - now) / 1000
+      );
+
+
+    $("timer").textContent =
+      Math.ceil(left);
+
+
+    $("timerBar").style.transform =
+      `scaleX(${left / payload.duration})`;
+
+
+    if (!answered) {
+
+      document
+        .querySelectorAll(".option")
+        .forEach(
+          b => b.disabled = false
+        );
+
+
+      $("status").textContent =
+        "Choose your answer";
+
+    }
+
+
+    if (left <= 0) {
+
+      clearInterval(tick);
+
+
+      disableOptions();
+
+
+      $("status").textContent =
+        answered
+          ? "Answer locked!"
+          : "TIME UP!";
+
+    }
+
+  }, 50);
+
 }
 
 
-function disableOptions(){
- document
-  .querySelectorAll(".option")
-  .forEach(b=>b.disabled=true);
+// DISABLE OPTIONS
+
+function disableOptions() {
+
+  document
+    .querySelectorAll(".option")
+    .forEach(
+      b => b.disabled = true
+    );
+
 }
 
 
 // QUESTION
 
-socket.on("question",q=>{
+socket.on("question", q => {
 
- current=q;
- answered=false;
- visibilityReporting=false;
+  current = q;
 
- show("game");
 
- $("qnum").textContent=
-  `${q.index+1} / ${q.total}`;
+  answered = false;
 
- $("question").textContent=
-  q.question;
 
- if(!switchBlocked){
-  $("status").textContent=
-   "📖 READ QUESTION";
- }
+  // IMPORTANT:
+  // NEXT QUESTION IS UNBLOCKED
 
- $("options").innerHTML=q.options.map(
-  (o,i)=>
-   `<button class="option" data-i="${i}">
-    <span class="letter">${"ABCD"[i]}</span>${o}
-   </button>`
- ).join("");
+  questionBlocked = false;
 
- document
-  .querySelectorAll(".option")
-  .forEach(b=>b.onclick=()=>{
 
-   if(answered || switchBlocked)return;
+  visibilityReporting = false;
 
-   answered=true;
 
-   disableOptions();
+  show("game");
 
-   b.classList.add("selected");
 
-   $("status").textContent=
-    "Answer locked!";
+  $("qnum").textContent =
+    `${q.index + 1} / ${q.total}`;
 
-   socket.emit(
-    "answer",
-    {
-     index:q.index,
-     option:+b.dataset.i
-    },
-    r=>{
 
-     if(!r?.ok){
-      $("status").textContent=
-       r?.error||"Could not submit";
-     }
+  $("question").textContent =
+    q.question;
 
-    }
-   );
 
-  });
+  $("status").textContent =
+    "📖 READ QUESTION";
 
- runTimer(q);
+
+  $("options").innerHTML =
+    q.options.map(
+      (o, i) =>
+
+        `<button
+          class="option"
+          data-i="${i}"
+        >
+
+          <span class="letter">
+            ${"ABCD"[i]}
+          </span>
+
+          ${o}
+
+        </button>`
+
+    ).join("");
+
+
+  document
+    .querySelectorAll(".option")
+    .forEach(b => {
+
+      b.onclick = () => {
+
+        if (
+          answered ||
+          questionBlocked
+        ) {
+
+          return;
+
+        }
+
+
+        answered = true;
+
+
+        disableOptions();
+
+
+        b.classList.add(
+          "selected"
+        );
+
+
+        $("status").textContent =
+          "Answer locked!";
+
+
+        socket.emit(
+          "answer",
+          {
+            index: q.index,
+            option: +b.dataset.i
+          },
+          r => {
+
+            if (!r?.ok) {
+
+              // SERVER SAYS CURRENT
+              // QUESTION IS BLOCKED
+
+              if (
+                String(
+                  r?.error || ""
+                )
+                  .toLowerCase()
+                  .includes("blocked")
+              ) {
+
+                questionBlocked = true;
+
+              }
+
+
+              disableOptions();
+
+
+              $("status").textContent =
+                r?.error ||
+                "Could not submit";
+
+            }
+
+          }
+        );
+
+      };
+
+    });
+
+
+  runTimer(q);
+
 });
 
 
 // ANSWER RESULT
 
-socket.on("answer:result",r=>{
+socket.on("answer:result", r => {
 
- $("score").textContent=
-  r.score;
+  $("score").textContent =
+    r.score;
 
- $("status").textContent=
-  r.correct
-   ?`CORRECT! +${r.points} POINTS`
-   :"WRONG ANSWER";
+
+  $("status").textContent =
+    r.correct
+
+      ? `CORRECT! +${r.points} POINTS`
+
+      : "WRONG ANSWER";
+
+});
+
+
+// PLAYER VIOLATION
+
+socket.on("player:violation", d => {
+
+  if (
+    !current ||
+    d.index !== current.index
+  ) {
+
+    return;
+
+  }
+
+
+  if (d.blocked) {
+
+    questionBlocked = true;
+
+
+    disableOptions();
+
+
+    $("status").textContent =
+      `🚫 QUESTION ${d.questionNumber} BLOCKED - APP/SCREEN SWITCH DETECTED`;
+
+  }
 
 });
 
 
 // REVEAL ANSWER
 
-socket.on("reveal",d=>{
+socket.on("reveal", d => {
 
- clearInterval(tick);
+  clearInterval(tick);
 
- document
-  .querySelectorAll(".option")
-  .forEach((b,i)=>{
 
-   b.disabled=true;
+  document
+    .querySelectorAll(".option")
+    .forEach((b, i) => {
 
-   if(i===d.answer)
-    b.classList.add("correct");
+      b.disabled = true;
 
-   else if(
-    b.classList.contains("selected")
-   )
-    b.classList.add("wrong");
 
-   else
-    b.classList.add("dim");
+      if (i === d.answer) {
 
-  });
+        b.classList.add(
+          "correct"
+        );
+
+      }
+
+      else if (
+        b.classList.contains(
+          "selected"
+        )
+      ) {
+
+        b.classList.add(
+          "wrong"
+        );
+
+      }
+
+      else {
+
+        b.classList.add(
+          "dim"
+        );
+
+      }
+
+    });
 
 });
 
 
 // FINAL RANKING
 
-function renderRanks(list,target){
+function renderRanks(list, target) {
 
- $(target).innerHTML=list.map(
-  (p,i)=>
-   `<div class="rankRow">
-    <b>#${i+1}</b>
-    <span>
-     ${p.name}
-     <small> · ${p.registerNo}</small>
-    </span>
-    <strong>${p.score}</strong>
-   </div>`
- ).join("");
+  $(target).innerHTML =
+    list.map(
+      (p, i) =>
 
-}
+        `<div class="rankRow">
 
+          <b>
+            #${i + 1}
+          </b>
 
-function renderPodium(list,target){
+          <span>
 
- const order=[
-  list[1],
-  list[0],
-  list[2]
- ];
+            ${p.name}
 
- const medals=[
-  "🥈",
-  "🥇",
-  "🥉"
- ];
+            <small>
+              · ${p.registerNo}
+            </small>
 
- $(target).innerHTML=order.map(
-  (p,i)=>p
-   ?`<div class="podiumItem ${i===1?"first":""}">
-     <div>${medals[i]}</div>
-     <strong>${p.name}</strong>
-     <span>${p.score}</span>
-    </div>`
-   :""
- ).join("");
+          </span>
+
+          <strong>
+            ${p.score}
+          </strong>
+
+        </div>`
+
+    ).join("");
 
 }
 
 
-socket.on("quiz:finished",d=>{
+// FINAL PODIUM
 
- clearInterval(tick);
+function renderPodium(list, target) {
 
- show("final");
+  const order = [
+    list[1],
+    list[0],
+    list[2]
+  ];
 
- renderPodium(
-  d.leaderboard,
-  $("podium").id
- );
 
- renderRanks(
-  d.leaderboard,
-  "ranking"
- );
+  const medals = [
+    "🥈",
+    "🥇",
+    "🥉"
+  ];
+
+
+  $(target).innerHTML =
+    order.map(
+      (p, i) => p
+
+        ? `<div
+            class="podiumItem ${
+              i === 1
+                ? "first"
+                : ""
+            }"
+          >
+
+            <div>
+              ${medals[i]}
+            </div>
+
+            <strong>
+              ${p.name}
+            </strong>
+
+            <span>
+              ${p.score}
+            </span>
+
+          </div>`
+
+        : ""
+
+    ).join("");
+
+}
+
+
+// QUIZ FINISHED
+
+socket.on("quiz:finished", d => {
+
+  clearInterval(tick);
+
+
+  show("final");
+
+
+  renderPodium(
+    d.leaderboard,
+    $("podium").id
+  );
+
+
+  renderRanks(
+    d.leaderboard,
+    "ranking"
+  );
 
 });
 
 
-socket.on("quiz:reset",()=>
- location.reload()
+// QUIZ RESET
+
+socket.on(
+  "quiz:reset",
+  () => location.reload()
 );
 
 
-// APP SWITCH DETECTION
+// REPORT CURRENT QUESTION VIOLATION
 
-document.addEventListener(
- "visibilitychange",
- ()=>{
+function reportViolation(type) {
 
-  if(
-   document.visibilityState!=="hidden" ||
-   !me ||
-   !current ||
-   answered ||
-   switchBlocked ||
-   visibilityReporting
-  ){
-   return;
+  if (
+    !me ||
+    !current ||
+    answered ||
+    questionBlocked ||
+    visibilityReporting
+  ) {
+
+    return;
+
   }
 
-  visibilityReporting=true;
+
+  visibilityReporting = true;
+
 
   socket.emit(
-   "player:visibilityViolation",
-   {
-    index:current.index
-   },
-   r=>{
+    "player:visibilityViolation",
+    {
+      index: current.index
+    },
+    r => {
 
-    visibilityReporting=false;
+      visibilityReporting = false;
 
-    if(!r?.ok)return;
 
-    if(r.blocked){
+      if (!r?.ok) {
 
-     switchBlocked=true;
+        return;
 
-     disableOptions();
+      }
 
-     $("status").textContent=
-      "🚫 ANSWER BLOCKED - APP SWITCHING DETECTED";
+
+      if (r.blocked) {
+
+        questionBlocked = true;
+
+
+        disableOptions();
+
+
+        const reason =
+          type === "screen"
+
+            ? "SCREEN SEARCH DETECTED"
+
+            : "APP SWITCHING DETECTED";
+
+
+        $("status").textContent =
+          `🚫 QUESTION ${r.questionNumber} BLOCKED - ${reason}`;
+
+      }
 
     }
-    else{
-
-     $("status").textContent=
-      `⚠️ APP SWITCH WARNING ${r.warnings}/2`;
-
-    }
-
-   }
   );
 
- }
+}
+
+
+// APP / TAB SWITCH DETECTION
+
+document.addEventListener(
+  "visibilitychange",
+  () => {
+
+    if (
+      document.visibilityState !== "hidden"
+    ) {
+
+      return;
+
+    }
+
+
+    reportViolation(
+      "app"
+    );
+
+  }
 );
 
 
 // CIRCLE TO SEARCH / SCREEN SEARCH DETECTION
 
 window.addEventListener(
- "blur",
- ()=>{
+  "blur",
+  () => {
 
-  if(
-   !me ||
-   !current ||
-   answered ||
-   switchBlocked ||
-   visibilityReporting
-  ){
-   return;
+    reportViolation(
+      "screen"
+    );
+
   }
+);
 
-  visibilityReporting=true;
 
-  socket.emit(
-   "player:visibilityViolation",
-   {
-    index:current.index
-   },
-   r=>{
+// PLAYER REMOVED BY HOST
 
-    visibilityReporting=false;
+socket.on(
+  "player:removed",
+  () => {
 
-    if(!r?.ok)return;
+    clearInterval(tick);
 
-    if(r.blocked){
 
-     switchBlocked=true;
+    me = null;
 
-     disableOptions();
 
-     $("status").textContent=
-      "🚫 ANSWER BLOCKED - SCREEN SEARCH DETECTED";
+    current = null;
 
-    }
-    else{
 
-     $("status").textContent=
-      `⚠️ SCREEN SEARCH WARNING ${r.warnings}/2`;
+    answered = false;
 
-    }
 
-   }
-  );
+    questionBlocked = false;
 
- }
+
+    visibilityReporting = false;
+
+
+    show("join");
+
+
+    $("joinMsg").textContent =
+      "🚫 You were removed by the host";
+
+  }
 );

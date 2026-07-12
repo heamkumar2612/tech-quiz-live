@@ -8,13 +8,27 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static(path.join(__dirname, "public")));
+app.use(
+  express.static(
+    path.join(__dirname, "public")
+  )
+);
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+
+  res.sendFile(
+    path.join(
+      __dirname,
+      "public",
+      "index.html"
+    )
+  );
+
 });
 
-const QUIZ_CODE = process.env.QUIZ_CODE || "482917";
+
+const QUIZ_CODE =
+  process.env.QUIZ_CODE || "482917";
 
 const QUESTION_TIME = 20;
 const READING_TIME = 5;
@@ -22,438 +36,1078 @@ const READING_TIME = 5;
 const MIN_CORRECT = 500;
 const SPEED_BONUS = 500;
 
+
 let players = new Map();
 
+
 let quiz = {
+
   started: false,
   finished: false,
   index: -1,
   startedAt: 0,
   timer: null,
   answers: new Map()
+
 };
+
+
+// PUBLIC PLAYER DATA
 
 const publicPlayers = () =>
-  [...players.values()].map(({ socketId, ...p }) => p);
+
+  [...players.values()].map(
+    ({ socketId, blockedQuestions, ...p }) => p
+  );
+
+
+// LEADERBOARD
 
 const leaderboard = () =>
+
   publicPlayers().sort(
     (a, b) =>
+
       b.score - a.score ||
+
       b.correct - a.correct ||
-      a.name.localeCompare(b.name)
+
+      a.name.localeCompare(
+        b.name
+      )
+
   );
+
+
+// CURRENT QUESTION
 
 const currentPayload = () => {
-  if (quiz.index < 0 || quiz.index >= questions.length) {
+
+  if (
+    quiz.index < 0 ||
+    quiz.index >= questions.length
+  ) {
+
     return null;
+
   }
 
-  const q = questions[quiz.index];
+
+  const q =
+    questions[quiz.index];
+
 
   return {
+
     index: quiz.index,
+
     total: questions.length,
+
     question: q.question,
+
     options: q.options,
+
     duration: QUESTION_TIME,
+
     readingTime: READING_TIME,
+
     startedAt: quiz.startedAt
+
   };
+
 };
 
+
+// BROADCAST PLAYER LIST
+
 function broadcastLobby() {
-  io.emit("lobby:update", {
-    count: players.size,
-    players: publicPlayers()
-  });
+
+  io.emit(
+    "lobby:update",
+    {
+
+      count: players.size,
+
+      players: publicPlayers()
+
+    }
+  );
+
 }
+
+
+// START QUESTION
 
 function startQuestion() {
-  clearTimeout(quiz.timer);
 
-  quiz.answers = new Map();
-
-  // 5-second reading time before answering starts
-  quiz.startedAt = Date.now() + READING_TIME * 1000;
-
-  io.emit("question", currentPayload());
-
-  quiz.timer = setTimeout(
-    revealQuestion,
-    (READING_TIME + QUESTION_TIME) * 1000 + 250
+  clearTimeout(
+    quiz.timer
   );
+
+
+  quiz.answers =
+    new Map();
+
+
+  // 5 SECOND READING TIME
+
+  quiz.startedAt =
+
+    Date.now() +
+
+    READING_TIME * 1000;
+
+
+  io.emit(
+    "question",
+    currentPayload()
+  );
+
+
+  quiz.timer =
+    setTimeout(
+
+      revealQuestion,
+
+      (
+        READING_TIME +
+        QUESTION_TIME
+      ) * 1000 + 250
+
+    );
+
 }
 
+
+// REVEAL QUESTION
+
 function revealQuestion() {
-  clearTimeout(quiz.timer);
+
+  clearTimeout(
+    quiz.timer
+  );
+
 
   if (
     !quiz.started ||
     quiz.finished ||
     quiz.index < 0
   ) {
+
     return;
+
   }
 
-  const q = questions[quiz.index];
 
-  io.emit("reveal", {
-    answer: q.answer,
-    leaderboard: leaderboard().slice(0, 5)
-  });
+  const q =
+    questions[quiz.index];
+
+
+  io.emit(
+    "reveal",
+    {
+
+      answer: q.answer,
+
+      leaderboard:
+        leaderboard().slice(0, 5)
+
+    }
+  );
+
 }
+
+
+// FINISH QUIZ
 
 function finishQuiz() {
-  clearTimeout(quiz.timer);
+
+  clearTimeout(
+    quiz.timer
+  );
+
 
   quiz.finished = true;
+
   quiz.started = false;
 
-  io.emit("quiz:finished", {
-    leaderboard: leaderboard()
-  });
+
+  io.emit(
+    "quiz:finished",
+    {
+
+      leaderboard:
+        leaderboard()
+
+    }
+  );
+
 }
 
-io.on("connection", socket => {
 
-  // PLAYER JOIN
-  socket.on(
-    "player:join",
-    ({ name, registerNo, code }, ack) => {
+// SOCKET CONNECTION
 
-      name = String(name || "")
-        .trim()
-        .slice(0, 40);
+io.on(
+  "connection",
+  socket => {
 
-      registerNo = String(registerNo || "")
-        .trim()
-        .slice(0, 30);
 
-      if (String(code || "").trim() !== QUIZ_CODE) {
-        return ack({
-          ok: false,
-          error: "Wrong quiz code"
-        });
-      }
+    // PLAYER JOIN
 
-      if (!name || !registerNo) {
-        return ack({
-          ok: false,
-          error: "Enter name and roll number"
-        });
-      }
-
-      if (quiz.started || quiz.finished) {
-        return ack({
-          ok: false,
-          error: "Quiz already started"
-        });
-      }
-
-      const duplicate = [...players.values()].some(
-        p =>
-          p.registerNo.toLowerCase() ===
-          registerNo.toLowerCase()
-      );
-
-      if (duplicate) {
-        return ack({
-          ok: false,
-          error: "Roll number already joined"
-        });
-      }
-
-      players.set(socket.id, {
-        id: socket.id,
-        name,
-        registerNo,
-        score: 0,
-        correct: 0,
-        answered: 0,
-        totalViolations: 0,
-        socketId: socket.id
-      });
-
-      socket.data.role = "player";
-      socket.data.playerId = socket.id;
-
-      ack({
-        ok: true,
-        player: players.get(socket.id)
-      });
-
-      broadcastLobby();
-    }
-  );
-
-  // HOST LOGIN
-  socket.on("host:auth", ({ code }, ack) => {
-
-    if (String(code || "") !== QUIZ_CODE) {
-      return ack({ ok: false });
-    }
-
-    socket.data.role = "host";
-
-    ack({
-      ok: true,
-      state: {
-        started: quiz.started,
-        finished: quiz.finished,
-        index: quiz.index,
-        count: players.size,
-        leaderboard: leaderboard()
-      }
-    });
-  });
-
-  // START QUIZ
-  socket.on("host:start", () => {
-
-    if (
-      socket.data.role !== "host" ||
-      quiz.started ||
-      quiz.finished ||
-      players.size === 0
-    ) {
-      return;
-    }
-
-    quiz.started = true;
-    quiz.index = 0;
-
-    io.emit("quiz:started");
-
-    startQuestion();
-  });
-
-  // NEXT QUESTION
-  socket.on("host:next", () => {
-
-    if (
-      socket.data.role !== "host" ||
-      !quiz.started
-    ) {
-      return;
-    }
-
-    if (quiz.index >= questions.length - 1) {
-      return finishQuiz();
-    }
-
-    quiz.index++;
-
-    startQuestion();
-  });
-
-  // REVEAL ANSWER
-  socket.on("host:reveal", () => {
-
-    if (socket.data.role === "host") {
-      revealQuestion();
-    }
-  });
-
-  // RESET QUIZ
-  socket.on("host:reset", () => {
-
-    if (socket.data.role !== "host") {
-      return;
-    }
-
-    clearTimeout(quiz.timer);
-
-    players.clear();
-
-    quiz = {
-      started: false,
-      finished: false,
-      index: -1,
-      startedAt: 0,
-      timer: null,
-      answers: new Map()
-    };
-
-    io.emit("quiz:reset");
-
-    broadcastLobby();
-  });
-
-  // APP SWITCH / CIRCLE TO SEARCH DETECTION
-  socket.on(
-    "player:visibilityViolation",
-    ({ index }, ack) => {
-
-      const p = players.get(socket.id);
-
-      if (
-        !p ||
-        socket.data.role !== "player" ||
-        !quiz.started ||
-        quiz.finished ||
-        index !== quiz.index ||
-        quiz.answers.has(socket.id)
-      ) {
-        return ack?.({ ok: false });
-      }
-
-      p.totalViolations =
-        (p.totalViolations || 0) + 1;
-
-      const warningCount =
-        p.totalViolations;
-
-      players.set(socket.id, p);
-
-      io.to(socket.id).emit(
-        "player:violation",
+    socket.on(
+      "player:join",
+      (
         {
-          warnings: warningCount,
-          blocked: warningCount >= 2
+          name,
+          registerNo,
+          code
+        },
+        ack
+      ) => {
+
+
+        name =
+
+          String(name || "")
+
+            .trim()
+
+            .slice(0, 40);
+
+
+        registerNo =
+
+          String(registerNo || "")
+
+            .trim()
+
+            .slice(0, 30);
+
+
+        if (
+          String(code || "").trim()
+          !== QUIZ_CODE
+        ) {
+
+          return ack?.({
+
+            ok: false,
+
+            error:
+              "Wrong quiz code"
+
+          });
+
         }
-      );
 
-      io.emit("host:violation", {
-        name: p.name,
-        registerNo: p.registerNo,
-        index: quiz.index,
-        warnings: warningCount
-      });
 
-      ack?.({
-        ok: true,
-        warnings: warningCount,
-        blocked: warningCount >= 2
-      });
-    }
-  );
+        if (
+          !name ||
+          !registerNo
+        ) {
 
-  // PLAYER ANSWER
-  socket.on(
-    "answer",
-    ({ index, option }, ack) => {
+          return ack?.({
 
-      const p = players.get(socket.id);
+            ok: false,
 
-      if (
-        !p ||
-        !quiz.started ||
-        quiz.finished ||
-        index !== quiz.index ||
-        quiz.answers.has(socket.id)
-      ) {
-        return ack?.({ ok: false });
-      }
+            error:
+              "Enter name and roll number"
 
-      // BLOCK AFTER 2 TOTAL VIOLATIONS
-      if ((p.totalViolations || 0) >= 2) {
-        return ack?.({
-          ok: false,
-          error: "Answer blocked: app switching detected"
-        });
-      }
+          });
 
-      // BLOCK ANSWERING DURING 5-SECOND READING TIME
-      if (Date.now() < quiz.startedAt) {
-        return ack?.({
-          ok: false,
-          error: "Reading time - wait before answering"
-        });
-      }
+        }
 
-      const elapsed =
-        (Date.now() - quiz.startedAt) / 1000;
 
-      if (elapsed > QUESTION_TIME + 0.5) {
-        return ack?.({
-          ok: false,
-          error: "Time over"
-        });
-      }
+        if (
+          quiz.started ||
+          quiz.finished
+        ) {
 
-      option = Number(option);
+          return ack?.({
 
-      if (
-        !Number.isInteger(option) ||
-        option < 0 ||
-        option >= questions[quiz.index].options.length
-      ) {
-        return ack?.({
-          ok: false,
-          error: "Invalid answer"
-        });
-      }
+            ok: false,
 
-      quiz.answers.set(
-        socket.id,
-        option
-      );
+            error:
+              "Quiz already started"
 
-      p.answered++;
+          });
 
-      const correct =
-        option === questions[quiz.index].answer;
+        }
 
-      let points = 0;
 
-      if (correct) {
+        const duplicate =
 
-        const remaining = Math.max(
-          0,
-          QUESTION_TIME - elapsed
+          [...players.values()].some(
+
+            p =>
+
+              p.registerNo
+                .toLowerCase()
+
+              ===
+
+              registerNo
+                .toLowerCase()
+
+          );
+
+
+        if (duplicate) {
+
+          return ack?.({
+
+            ok: false,
+
+            error:
+              "Roll number already joined"
+
+          });
+
+        }
+
+
+        players.set(
+          socket.id,
+          {
+
+            id: socket.id,
+
+            name,
+
+            registerNo,
+
+            score: 0,
+
+            correct: 0,
+
+            answered: 0,
+
+            blockedQuestions:
+              new Set(),
+
+            socketId: socket.id
+
+          }
         );
 
-        points = Math.round(
-          MIN_CORRECT +
-          SPEED_BONUS *
-          (remaining / QUESTION_TIME)
+
+        socket.data.role =
+          "player";
+
+
+        socket.data.playerId =
+          socket.id;
+
+
+        ack?.({
+
+          ok: true,
+
+          player:
+            players.get(socket.id)
+
+        });
+
+
+        broadcastLobby();
+
+      }
+    );
+
+
+    // HOST LOGIN
+
+    socket.on(
+      "host:auth",
+      ({ code }, ack) => {
+
+
+        if (
+          String(code || "")
+          !== QUIZ_CODE
+        ) {
+
+          return ack?.({
+
+            ok: false
+
+          });
+
+        }
+
+
+        socket.data.role =
+          "host";
+
+
+        ack?.({
+
+          ok: true,
+
+          state: {
+
+            started:
+              quiz.started,
+
+            finished:
+              quiz.finished,
+
+            index:
+              quiz.index,
+
+            count:
+              players.size,
+
+            players:
+              publicPlayers(),
+
+            leaderboard:
+              leaderboard()
+
+          }
+
+        });
+
+      }
+    );
+
+
+    // HOST MANUALLY REMOVE PLAYER
+
+    socket.on(
+      "host:removePlayer",
+      ({ playerId }, ack) => {
+
+
+        if (
+          socket.data.role !== "host"
+        ) {
+
+          return ack?.({
+
+            ok: false,
+
+            error:
+              "Host access required"
+
+          });
+
+        }
+
+
+        const player =
+          players.get(playerId);
+
+
+        if (!player) {
+
+          return ack?.({
+
+            ok: false,
+
+            error:
+              "Player not found"
+
+          });
+
+        }
+
+
+        // INFORM PLAYER
+
+        io.to(playerId).emit(
+          "player:removed"
         );
 
-        p.score += points;
-        p.correct++;
+
+        // REMOVE PLAYER
+
+        players.delete(
+          playerId
+        );
+
+
+        // REMOVE CURRENT ANSWER
+
+        quiz.answers.delete(
+          playerId
+        );
+
+
+        // UPDATE PLAYER LIST
+
+        broadcastLobby();
+
+
+        ack?.({
+
+          ok: true,
+
+          player: {
+
+            name:
+              player.name,
+
+            registerNo:
+              player.registerNo
+
+          }
+
+        });
+
       }
+    );
 
-      players.set(socket.id, p);
 
-      ack?.({
-        ok: true,
-        correct,
-        points,
-        score: p.score
-      });
+    // START QUIZ
 
-      io.to(socket.id).emit(
-        "answer:result",
+    socket.on(
+      "host:start",
+      () => {
+
+
+        if (
+          socket.data.role !== "host" ||
+          quiz.started ||
+          quiz.finished ||
+          players.size === 0
+        ) {
+
+          return;
+
+        }
+
+
+        quiz.started = true;
+
+        quiz.index = 0;
+
+
+        io.emit(
+          "quiz:started"
+        );
+
+
+        startQuestion();
+
+      }
+    );
+
+
+    // NEXT QUESTION
+
+    socket.on(
+      "host:next",
+      () => {
+
+
+        if (
+          socket.data.role !== "host" ||
+          !quiz.started
+        ) {
+
+          return;
+
+        }
+
+
+        if (
+          quiz.index >=
+          questions.length - 1
+        ) {
+
+          return finishQuiz();
+
+        }
+
+
+        quiz.index++;
+
+
+        startQuestion();
+
+      }
+    );
+
+
+    // REVEAL ANSWER
+
+    socket.on(
+      "host:reveal",
+      () => {
+
+
+        if (
+          socket.data.role === "host"
+        ) {
+
+          revealQuestion();
+
+        }
+
+      }
+    );
+
+
+    // RESET QUIZ
+
+    socket.on(
+      "host:reset",
+      () => {
+
+
+        if (
+          socket.data.role !== "host"
+        ) {
+
+          return;
+
+        }
+
+
+        clearTimeout(
+          quiz.timer
+        );
+
+
+        players.clear();
+
+
+        quiz = {
+
+          started: false,
+
+          finished: false,
+
+          index: -1,
+
+          startedAt: 0,
+
+          timer: null,
+
+          answers: new Map()
+
+        };
+
+
+        io.emit(
+          "quiz:reset"
+        );
+
+
+        broadcastLobby();
+
+      }
+    );
+
+
+    // APP SWITCH /
+    // CIRCLE TO SEARCH DETECTION
+
+    socket.on(
+      "player:visibilityViolation",
+      ({ index }, ack) => {
+
+
+        const p =
+          players.get(socket.id);
+
+
+        if (
+          !p ||
+          socket.data.role !== "player" ||
+          !quiz.started ||
+          quiz.finished ||
+          index !== quiz.index ||
+          quiz.answers.has(socket.id)
+        ) {
+
+          return ack?.({
+
+            ok: false
+
+          });
+
+        }
+
+
+        if (
+          !(p.blockedQuestions instanceof Set)
+        ) {
+
+          p.blockedQuestions =
+            new Set();
+
+        }
+
+
+        // CURRENT QUESTION
+        // ALREADY BLOCKED
+
+        if (
+          p.blockedQuestions.has(
+            quiz.index
+          )
+        ) {
+
+          return ack?.({
+
+            ok: true,
+
+            blocked: true,
+
+            index:
+              quiz.index,
+
+            questionNumber:
+              quiz.index + 1
+
+          });
+
+        }
+
+
+        // BLOCK ONLY CURRENT QUESTION
+
+        p.blockedQuestions.add(
+          quiz.index
+        );
+
+
+        players.set(
+          socket.id,
+          p
+        );
+
+
+        // INFORM PLAYER
+
+        io.to(socket.id).emit(
+          "player:violation",
+          {
+
+            blocked: true,
+
+            index:
+              quiz.index,
+
+            questionNumber:
+              quiz.index + 1
+
+          }
+        );
+
+
+        // INFORM HOST
+
+        io.emit(
+          "host:violation",
+          {
+
+            id:
+              p.id,
+
+            playerId:
+              p.id,
+
+            name:
+              p.name,
+
+            registerNo:
+              p.registerNo,
+
+            index:
+              quiz.index,
+
+            questionNumber:
+              quiz.index + 1,
+
+            blocked: true
+
+          }
+        );
+
+
+        ack?.({
+
+          ok: true,
+
+          blocked: true,
+
+          index:
+            quiz.index,
+
+          questionNumber:
+            quiz.index + 1
+
+        });
+
+      }
+    );
+
+
+    // PLAYER ANSWER
+
+    socket.on(
+      "answer",
+      (
         {
+          index,
+          option
+        },
+        ack
+      ) => {
+
+
+        const p =
+          players.get(socket.id);
+
+
+        if (
+          !p ||
+          !quiz.started ||
+          quiz.finished ||
+          index !== quiz.index ||
+          quiz.answers.has(socket.id)
+        ) {
+
+          return ack?.({
+
+            ok: false
+
+          });
+
+        }
+
+
+        // BLOCK ONLY CURRENT QUESTION
+
+        if (
+          p.blockedQuestions instanceof Set &&
+          p.blockedQuestions.has(
+            quiz.index
+          )
+        ) {
+
+          return ack?.({
+
+            ok: false,
+
+            error:
+              `Question ${quiz.index + 1} blocked: app switching detected`
+
+          });
+
+        }
+
+
+        // BLOCK DURING READING TIME
+
+        if (
+          Date.now() <
+          quiz.startedAt
+        ) {
+
+          return ack?.({
+
+            ok: false,
+
+            error:
+              "Reading time - wait before answering"
+
+          });
+
+        }
+
+
+        const elapsed =
+
+          (
+            Date.now() -
+            quiz.startedAt
+          ) / 1000;
+
+
+        if (
+          elapsed >
+          QUESTION_TIME + 0.5
+        ) {
+
+          return ack?.({
+
+            ok: false,
+
+            error:
+              "Time over"
+
+          });
+
+        }
+
+
+        option =
+          Number(option);
+
+
+        if (
+          !Number.isInteger(option) ||
+          option < 0 ||
+          option >=
+            questions[quiz.index]
+              .options.length
+        ) {
+
+          return ack?.({
+
+            ok: false,
+
+            error:
+              "Invalid answer"
+
+          });
+
+        }
+
+
+        quiz.answers.set(
+          socket.id,
+          option
+        );
+
+
+        p.answered++;
+
+
+        const correct =
+
+          option ===
+
+          questions[quiz.index]
+            .answer;
+
+
+        let points = 0;
+
+
+        if (correct) {
+
+
+          const remaining =
+
+            Math.max(
+
+              0,
+
+              QUESTION_TIME -
+              elapsed
+
+            );
+
+
+          points =
+
+            Math.round(
+
+              MIN_CORRECT +
+
+              SPEED_BONUS *
+
+              (
+                remaining /
+                QUESTION_TIME
+              )
+
+            );
+
+
+          p.score +=
+            points;
+
+
+          p.correct++;
+
+        }
+
+
+        players.set(
+          socket.id,
+          p
+        );
+
+
+        ack?.({
+
+          ok: true,
+
           correct,
+
           points,
-          score: p.score
+
+          score:
+            p.score
+
+        });
+
+
+        io.to(socket.id).emit(
+          "answer:result",
+          {
+
+            correct,
+
+            points,
+
+            score:
+              p.score
+
+          }
+        );
+
+      }
+    );
+
+
+    // PLAYER DISCONNECT
+
+    socket.on(
+      "disconnect",
+      () => {
+
+
+        if (
+          !quiz.started &&
+          players.has(socket.id)
+        ) {
+
+
+          players.delete(
+            socket.id
+          );
+
+
+          broadcastLobby();
+
         }
-      );
-    }
-  );
 
-  // PLAYER DISCONNECT
-  socket.on("disconnect", () => {
+      }
+    );
 
-    if (
-      !quiz.started &&
-      players.has(socket.id)
-    ) {
-      players.delete(socket.id);
 
-      broadcastLobby();
-    }
-  });
+  }
+);
 
-});
 
 const PORT =
   process.env.PORT || 3000;
 
-server.listen(PORT, () =>
-  console.log(
-    `Quiz running on port ${PORT}`
-  )
+
+server.listen(
+  PORT,
+  () => {
+
+    console.log(
+      `Quiz running on port ${PORT}`
+    );
+
+  }
 );
