@@ -12,3 +12,11 @@ function ranks(list,target){$(target).innerHTML=list.map((p,i)=>`<div class="ran
 function podium(list,target){const order=[list[1],list[0],list[2]],m=["🥈","🥇","🥉"];$(target).innerHTML=order.map((p,i)=>p?`<div class="podiumItem ${i===1?"first":""}"><div>${m[i]}</div><strong>${p.name}</strong><span>${p.score}</span></div>`:"").join("")}
 socket.on("quiz:finished",d=>{clearInterval(tick);show("hostFinal");podium(d.leaderboard,"hostPodium");ranks(d.leaderboard,"hostRanking")});
 socket.on("quiz:reset",()=>location.reload());
+socket.on("host:violation",d=>{
+ if(d.warnings>=2){
+  $("hostStatus").textContent=`🚫 BLOCKED: ${d.name} | Roll No: ${d.registerNo}`;
+ }
+ else{
+  $("hostStatus").textContent=`⚠️ APP SWITCH: ${d.name} | Roll No: ${d.registerNo} | Warning ${d.warnings}/2`;
+ }
+});
