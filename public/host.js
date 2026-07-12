@@ -85,6 +85,9 @@ function runTimer(q){
 
   const now=Date.now();
 
+  const hostMessage=
+   $("hostStatus").textContent;
+
 
   // 5 SECOND READING TIME
 
@@ -100,8 +103,13 @@ function runTimer(q){
    $("hostTimerBar").style.transform=
     `scaleX(${readingLeft/q.readingTime})`;
 
-   $("hostStatus").textContent=
-    `📖 READING TIME - ${readingLeft}`;
+   if(
+    !hostMessage.includes("APP SWITCH") &&
+    !hostMessage.includes("BLOCKED")
+   ){
+    $("hostStatus").textContent=
+     `📖 READING TIME - ${readingLeft}`;
+   }
 
    return;
   }
@@ -120,8 +128,13 @@ function runTimer(q){
   $("hostTimerBar").style.transform=
    `scaleX(${left/q.duration})`;
 
-  $("hostStatus").textContent=
-   "Students are answering...";
+  if(
+   !hostMessage.includes("APP SWITCH") &&
+   !hostMessage.includes("BLOCKED")
+  ){
+   $("hostStatus").textContent=
+    "Students are answering...";
+  }
 
   if(left<=0){
    clearInterval(tick);
