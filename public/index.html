@@ -1,21 +1,295 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tech Quiz Live</title><link rel="stylesheet" href="style.css"></head>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>
+    Tech Quiz Live
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
+
+</head>
+
+
 <body>
-<div class="bg"></div>
-<main class="shell">
-<section id="join" class="card join">
-  <div class="badge">LIVE TECH QUIZ</div><h1>Linear Data Structures</h1><p>Enter the game. Think fast. Score higher.</p>
-  <input id="code" placeholder="Quiz code" inputmode="numeric"><input id="name" placeholder="Your name">
-  <input id="reg" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" placeholder="Roll no (2 digits)"><button id="joinBtn">JOIN QUIZ</button><div id="joinMsg" class="msg"></div>
-</section>
-<section id="lobby" class="card hidden"><div class="pulse"></div><h1>You're in!</h1><h2 id="playerName"></h2><p>Waiting for the host to start...</p><div class="bigStat"><span id="lobbyCount">0</span><small>players joined</small></div></section>
-<section id="game" class="hidden">
-  <header><div><b>TECH QUIZ</b><span id="qnum">1 / 50</span></div><div class="score">SCORE <strong id="score">0</strong></div></header>
-  <div class="timerWrap"><div id="timerBar"></div></div>
-  <div class="questionCard"><div id="timer" class="timer">20</div><h1 id="question"></h1></div>
-  <div id="options" class="options"></div><div id="status" class="status"></div>
-</section>
-<section id="final" class="card hidden"><div class="badge">FINAL RESULTS</div><h1>🏆 Quiz Complete</h1><div id="podium" class="podium"></div><div id="ranking"></div></section>
-</main>
-<script src="/socket.io/socket.io.js"></script><script src="app.js"></script></body></html>
+
+
+  <div class="bg"></div>
+
+
+  <main class="shell">
+
+
+    <!-- =====================================================
+         JOIN PAGE
+    ====================================================== -->
+
+    <section
+      id="join"
+      class="card join"
+    >
+
+      <div class="badge">
+        LIVE TECH QUIZ
+      </div>
+
+
+      <h1>
+        Linear Data Structures
+      </h1>
+
+
+      <p>
+        Enter the game. Think fast. Score higher.
+      </p>
+
+
+      <input
+        id="code"
+        placeholder="Quiz code"
+        inputmode="numeric"
+      >
+
+
+      <input
+        id="name"
+        placeholder="Your name"
+        autocomplete="name"
+      >
+
+
+      <input
+        id="reg"
+        type="text"
+        inputmode="numeric"
+        maxlength="2"
+        pattern="[0-9]{2}"
+        placeholder="Roll no (2 digits)"
+      >
+
+
+      <button id="joinBtn">
+        JOIN QUIZ
+      </button>
+
+
+      <div
+        id="joinMsg"
+        class="msg"
+      ></div>
+
+
+    </section>
+
+
+
+    <!-- =====================================================
+         PLAYER LOBBY
+    ====================================================== -->
+
+    <section
+      id="lobby"
+      class="card hidden"
+    >
+
+      <div class="pulse"></div>
+
+
+      <h1>
+        You're in!
+      </h1>
+
+
+      <h2 id="playerName"></h2>
+
+
+      <p>
+        Waiting for the host to start...
+      </p>
+
+
+      <div class="bigStat">
+
+        <span id="lobbyCount">
+          0
+        </span>
+
+        <small>
+          players joined
+        </small>
+
+      </div>
+
+
+    </section>
+
+
+
+    <!-- =====================================================
+         QUIZ GAME
+    ====================================================== -->
+
+    <section
+      id="game"
+      class="hidden"
+    >
+
+
+      <!-- QUIZ HEADER -->
+
+      <header>
+
+        <div>
+
+          <b>
+            TECH QUIZ
+          </b>
+
+          <span id="qnum">
+            1 / 95
+          </span>
+
+        </div>
+
+
+        <div class="score">
+
+          SCORE
+
+          <strong id="score">
+            0
+          </strong>
+
+        </div>
+
+      </header>
+
+
+
+      <!-- TIMER BAR -->
+
+      <div class="timerWrap">
+
+        <div id="timerBar"></div>
+
+      </div>
+
+
+
+      <!-- QUESTION -->
+
+      <div class="questionCard">
+
+        <div
+          id="timer"
+          class="timer"
+        >
+          20
+        </div>
+
+
+        <h1 id="question"></h1>
+
+      </div>
+
+
+
+      <!--
+        MCQ OPTIONS OR SCRAMBLED WORD UI
+
+        app.js automatically inserts:
+
+        MCQ:
+        4 option buttons
+
+        SCRAMBLED:
+        scrambled word
+        text input
+        submit button
+        revealed answer
+      -->
+
+      <div
+        id="options"
+        class="options"
+      ></div>
+
+
+
+      <!-- QUESTION STATUS -->
+
+      <div
+        id="status"
+        class="status"
+      ></div>
+
+
+    </section>
+
+
+
+    <!-- =====================================================
+         FINAL RESULTS
+    ====================================================== -->
+
+    <section
+      id="final"
+      class="card hidden"
+    >
+
+      <div class="badge">
+        FINAL RESULTS
+      </div>
+
+
+      <h1>
+        🏆 Quiz Complete
+      </h1>
+
+
+      <div
+        id="podium"
+        class="podium"
+      ></div>
+
+
+      <div id="ranking"></div>
+
+
+    </section>
+
+
+  </main>
+
+
+
+  <!-- =======================================================
+       SOCKET.IO
+  ======================================================== -->
+
+  <script src="/socket.io/socket.io.js"></script>
+
+
+
+  <!-- =======================================================
+       PLAYER APP
+  ======================================================== -->
+
+  <script src="app.js"></script>
+
+
+</body>
+
+</html>

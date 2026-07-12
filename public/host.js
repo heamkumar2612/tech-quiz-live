@@ -1,14 +1,24 @@
 const socket = io();
-const $ = id => document.getElementById(id);
+
+const $ = id =>
+  document.getElementById(id);
+
 
 let current = null;
+
 let tick = null;
 
-let violationPlayers = new Map();
+
+let violationPlayers =
+  new Map();
+
+
 let joinedPlayers = [];
 
 
-// ESCAPE PLAYER TEXT
+// ============================================================
+// ESCAPE PLAYER / QUESTION TEXT
+// ============================================================
 
 function escapeHTML(value) {
 
@@ -22,73 +32,130 @@ function escapeHTML(value) {
 }
 
 
-// SHOW HOST SECTION
+// ============================================================
+// CHECK SCRAMBLED QUESTION
+// ============================================================
 
-function show(id) {
+function isScrambledQuestion(q) {
 
-  ["auth", "host", "hostFinal"].forEach(
-    x => $(x).classList.toggle(
-      "hidden",
-      x !== id
-    )
+  return (
+    q &&
+    q.type === "scrambled"
   );
 
 }
 
 
-// HOST LOGIN
+// ============================================================
+// SHOW HOST SECTION
+// ============================================================
 
-$("authBtn").onclick = () => socket.emit(
-  "host:auth",
-  {
-    code: $("hostCode").value
-  },
-  r => {
+function show(id) {
 
-    if (!r?.ok) {
+  [
+    "auth",
+    "host",
+    "hostFinal"
+  ].forEach(
+    x => {
 
-      $("authMsg").textContent =
-        "Wrong host code";
+      const element = $(x);
 
-      return;
+
+      if (element) {
+
+        element.classList.toggle(
+          "hidden",
+          x !== id
+        );
+
+      }
 
     }
+  );
+
+}
 
 
-    show("host");
+// ============================================================
+// HOST LOGIN
+// ============================================================
+
+$("authBtn").onclick = () => {
+
+  socket.emit(
+    "host:auth",
+
+    {
+      code:
+        $("hostCode").value
+    },
+
+    r => {
+
+      if (!r?.ok) {
+
+        $("authMsg").textContent =
+          "Wrong host code";
+
+        return;
+
+      }
 
 
-    $("hostCount").textContent =
-      r.state.count;
+      show("host");
 
 
-    renderTop(
-      r.state.leaderboard.slice(0, 5)
-    );
+      $("hostCount").textContent =
+        r.state.count;
 
 
-    joinedPlayers =
-      r.state.players || [];
+      renderTop(
+        r.state.leaderboard.slice(0, 5)
+      );
 
 
-    renderPlayers();
-
-  }
-);
+      joinedPlayers =
+        r.state.players || [];
 
 
+      renderPlayers();
+
+    }
+  );
+
+};
+
+
+// ============================================================
 // HOST CONTROLS
+// ============================================================
 
-$("startBtn").onclick = () =>
-  socket.emit("host:start");
+$("startBtn").onclick = () => {
+
+  socket.emit(
+    "host:start"
+  );
+
+};
 
 
-$("nextBtn").onclick = () =>
-  socket.emit("host:next");
+$("nextBtn").onclick = () => {
+
+  socket.emit(
+    "host:next"
+  );
+
+};
 
 
-$("revealBtn").onclick = () =>
-  socket.emit("host:reveal");
+$("revealBtn").onclick = () => {
+
+  socket.emit(
+    "host:reveal"
+  );
+
+};
 
 
 $("resetBtn").onclick = () => {
@@ -99,40 +166,54 @@ $("resetBtn").onclick = () => {
     )
   ) {
 
-    socket.emit("host:reset");
+    socket.emit(
+      "host:reset"
+    );
 
   }
 
 };
 
 
+// ============================================================
 // LOBBY UPDATE
+// ============================================================
 
-socket.on("lobby:update", d => {
+socket.on(
+  "lobby:update",
 
-  $("hostCount").textContent =
-    d.count;
+  d => {
 
-
-  joinedPlayers =
-    d.players || [];
-
-
-  renderPlayers();
-
-});
+    $("hostCount").textContent =
+      d.count;
 
 
+    joinedPlayers =
+      d.players || [];
+
+
+    renderPlayers();
+
+  }
+);
+
+
+// ============================================================
 // SHOW JOINED PLAYERS
+// ============================================================
 
 function renderPlayers() {
 
   if (!$("hostPlayers")) {
+
     return;
+
   }
 
 
-  if (joinedPlayers.length === 0) {
+  if (
+    joinedPlayers.length === 0
+  ) {
 
     $("hostPlayers").innerHTML =
       "<p>No players joined</p>";
@@ -143,96 +224,117 @@ function renderPlayers() {
 
 
   $("hostPlayers").innerHTML =
-    joinedPlayers.map(p => {
+    joinedPlayers.map(
+      p => {
 
-      const safeName =
-        escapeHTML(p.name);
-
-      const safeRegisterNo =
-        escapeHTML(p.registerNo);
-
-      const safeId =
-        escapeHTML(p.id);
+        const safeName =
+          escapeHTML(p.name);
 
 
-      return `
-        <div class="rankRow">
-
-          <span>
-
-            <strong>
-              ${safeName}
-            </strong>
-
-            <small>
-              · ${safeRegisterNo}
-            </small>
-
-          </span>
-
-          <button
-            class="danger removePlayerBtn"
-            data-id="${safeId}"
-          >
-            REMOVE
-          </button>
-
-        </div>
-      `;
-
-    }).join("");
-
-
-  document
-    .querySelectorAll(".removePlayerBtn")
-    .forEach(btn => {
-
-      btn.onclick = () => {
-
-        const playerId =
-          btn.dataset.id;
-
-
-        const player =
-          joinedPlayers.find(
-            p => p.id === playerId
+        const safeRegisterNo =
+          escapeHTML(
+            p.registerNo
           );
 
 
-        if (!player) {
-          return;
-        }
+        const safeId =
+          escapeHTML(p.id);
 
 
-        if (
-          !confirm(
-            `Remove ${player.name} from quiz?`
-          )
-        ) {
+        return `
 
-          return;
+          <div class="rankRow">
 
-        }
+            <span>
+
+              <strong>
+                ${safeName}
+              </strong>
+
+              <small>
+                · ${safeRegisterNo}
+              </small>
+
+            </span>
 
 
-        removePlayer(player);
+            <button
+              class="danger removePlayerBtn"
+              data-id="${safeId}"
+            >
+              REMOVE
+            </button>
 
-      };
+          </div>
 
-    });
+        `;
+
+      }
+    ).join("");
+
+
+  document
+    .querySelectorAll(
+      ".removePlayerBtn"
+    )
+    .forEach(
+      btn => {
+
+        btn.onclick = () => {
+
+          const playerId =
+            btn.dataset.id;
+
+
+          const player =
+            joinedPlayers.find(
+              p =>
+                p.id === playerId
+            );
+
+
+          if (!player) {
+
+            return;
+
+          }
+
+
+          if (
+            !confirm(
+              `Remove ${player.name} from quiz?`
+            )
+          ) {
+
+            return;
+
+          }
+
+
+          removePlayer(player);
+
+        };
+
+      }
+    );
 
 }
 
 
+// ============================================================
 // REMOVE PLAYER
+// ============================================================
 
 function removePlayer(player) {
 
   socket.emit(
     "host:removePlayer",
+
     {
-      playerId: player.id
+      playerId:
+        player.id
     },
+
     r => {
 
       if (!r?.ok) {
@@ -247,19 +349,25 @@ function removePlayer(player) {
       }
 
 
-      // REMOVE ALL ALERTS
+      // REMOVE ANTI-CHEAT ALERTS
       // FOR REMOVED PLAYER
 
       for (
-        const [key, alertPlayer]
+        const [
+          key,
+          alertPlayer
+        ]
         of violationPlayers
       ) {
 
         if (
-          alertPlayer.playerId === player.id
+          alertPlayer.playerId ===
+          player.id
         ) {
 
-          violationPlayers.delete(key);
+          violationPlayers.delete(
+            key
+          );
 
         }
 
@@ -274,45 +382,53 @@ function removePlayer(player) {
 }
 
 
-// TOP 5
+// ============================================================
+// TOP 5 LEADERBOARD
+// ============================================================
 
 function renderTop(list) {
 
   $("top5").innerHTML =
     list.length
 
-      ? list.map((p, i) => {
+      ? list.map(
+          (p, i) => {
 
-          const safeName =
-            escapeHTML(p.name);
+            const safeName =
+              escapeHTML(p.name);
 
 
-          return `
-            <div class="leader">
+            return `
 
-              <b>
-                ${i + 1}
-              </b>
+              <div class="leader">
 
-              <span>
-                ${safeName}
-              </span>
+                <b>
+                  ${i + 1}
+                </b>
 
-              <span>
-                ${p.score}
-              </span>
+                <span>
+                  ${safeName}
+                </span>
 
-            </div>
-          `;
+                <span>
+                  ${p.score}
+                </span>
 
-        }).join("")
+              </div>
+
+            `;
+
+          }
+        ).join("")
 
       : "<p>No scores yet</p>";
 
 }
 
 
+// ============================================================
 // HOST TIMER + 5 SECOND READING TIME
+// ============================================================
 
 function runTimer(q) {
 
@@ -328,124 +444,126 @@ function runTimer(q) {
     q.duration * 1000;
 
 
-  tick = setInterval(() => {
+  tick = setInterval(
+    () => {
 
-    const now =
-      Date.now();
+      const now =
+        Date.now();
 
 
-    const hasCurrentAlerts =
-      [...violationPlayers.values()]
-        .some(
-          p => p.index === q.index
+      const hasCurrentAlerts =
+        [
+          ...violationPlayers.values()
+        ].some(
+          p =>
+            p.index === q.index
         );
 
 
-    // 5 SECOND READING TIME
+      // 5 SECOND READING TIME
 
-    if (now < answerStart) {
+      if (
+        now < answerStart
+      ) {
 
-      const readingLeft =
-        Math.ceil(
-          (answerStart - now) / 1000
-        );
-
-
-      $("hostTimer").textContent =
-        readingLeft;
-
-
-      $("hostTimerBar").style.transform =
-        `scaleX(${readingLeft / q.readingTime})`;
+        const readingLeft =
+          Math.ceil(
+            (
+              answerStart -
+              now
+            ) / 1000
+          );
 
 
-      if (!hasCurrentAlerts) {
+        $("hostTimer").textContent =
+          readingLeft;
 
-        $("hostStatus").textContent =
-          `📖 READING TIME - ${readingLeft}`;
+
+        $("hostTimerBar")
+          .style
+          .transform =
+            `scaleX(${
+              readingLeft /
+              q.readingTime
+            })`;
+
+
+        if (
+          !hasCurrentAlerts
+        ) {
+
+          $("hostStatus").textContent =
+            `📖 READING TIME - ${readingLeft}`;
+
+        }
+
+
+        return;
 
       }
 
 
-      return;
+      // 20 SECOND ANSWER TIME
 
-    }
+      const left =
+        Math.max(
+          0,
 
-
-    // 20 SECOND ANSWER TIME
-
-    const left =
-      Math.max(
-        0,
-        (answerEnd - now) / 1000
-      );
-
-
-    $("hostTimer").textContent =
-      Math.ceil(left);
+          (
+            answerEnd -
+            now
+          ) / 1000
+        );
 
 
-    $("hostTimerBar").style.transform =
-      `scaleX(${left / q.duration})`;
+      $("hostTimer").textContent =
+        Math.ceil(left);
 
 
-    if (!hasCurrentAlerts) {
+      $("hostTimerBar")
+        .style
+        .transform =
+          `scaleX(${
+            left /
+            q.duration
+          })`;
 
-      $("hostStatus").textContent =
-        "Students are answering...";
 
-    }
+      if (
+        !hasCurrentAlerts
+      ) {
+
+        $("hostStatus").textContent =
+          isScrambledQuestion(q)
+
+            ? "Players are typing answers..."
+
+            : "Students are answering...";
+
+      }
 
 
-    if (left <= 0) {
+      if (
+        left <= 0
+      ) {
 
-      clearInterval(tick);
+        clearInterval(tick);
 
-    }
+      }
 
-  }, 50);
+    },
+
+    50
+  );
 
 }
 
 
-// QUESTION
+// ============================================================
+// RENDER MCQ QUESTION
+// ============================================================
 
-socket.on("question", q => {
-
-  current = q;
-
-
-  // CLEAR OLD QUESTION ALERTS
-
-  violationPlayers.clear();
-
-
-  show("host");
-
-
-  // HIDE NORMAL PLAYER REMOVE LIST
-  // AFTER QUIZ STARTS
-
-  if ($("playerManage")) {
-
-    $("playerManage")
-      .classList
-      .add("hidden");
-
-  }
-
-
-  $("hostQnum").textContent =
-    `QUESTION ${q.index + 1} / ${q.total}`;
-
-
-  $("hostQuestion").textContent =
-    q.question;
-
-
-  $("hostStatus").textContent =
-    "📖 READING TIME";
-
+function renderMCQQuestion(q) {
 
   $("hostOptions").innerHTML =
     q.options.map(
@@ -456,6 +574,7 @@ socket.on("question", q => {
 
 
         return `
+
           <div
             class="option"
             data-i="${i}"
@@ -468,106 +587,298 @@ socket.on("question", q => {
             ${safeOption}
 
           </div>
+
         `;
 
       }
     ).join("");
 
-
-  runTimer(q);
-
-});
+}
 
 
-// REVEAL ANSWER
+// ============================================================
+// RENDER SCRAMBLED WORD QUESTION
+// ============================================================
 
-socket.on("reveal", d => {
+function renderScrambledQuestion(q) {
 
-  clearInterval(tick);
-
-
-  document
-    .querySelectorAll(
-      "#hostOptions .option"
-    )
-    .forEach((b, i) => {
-
-      if (i === d.answer) {
-
-        b.classList.add(
-          "correct"
-        );
-
-      }
-      else {
-
-        b.classList.add(
-          "dim"
-        );
-
-      }
-
-    });
+  const safeScrambled =
+    escapeHTML(q.scrambled);
 
 
-  $("hostStatus").textContent =
-    `Correct answer: ${"ABCD"[d.answer]}`;
+  $("hostOptions").innerHTML = `
+
+    <div class="scrambledRound">
+
+      <div class="scrambledLabel">
+        🔀 SCRAMBLED WORD ROUND
+      </div>
 
 
-  renderTop(
-    d.leaderboard
-  );
-
-});
+      <div class="scrambledWord">
+        ${safeScrambled}
+      </div>
 
 
-// FINAL RANKING
+      <div
+        id="hostScrambledReveal"
+        class="scrambledReveal hidden"
+      ></div>
 
-function ranks(list, target) {
+    </div>
 
-  $(target).innerHTML =
-    list.map((p, i) => {
-
-      const safeName =
-        escapeHTML(p.name);
-
-      const safeRegisterNo =
-        escapeHTML(p.registerNo);
-
-
-      return `
-        <div class="rankRow">
-
-          <b>
-            #${i + 1}
-          </b>
-
-          <span>
-
-            ${safeName}
-
-            <small>
-              · ${safeRegisterNo}
-              · ${p.correct} correct
-            </small>
-
-          </span>
-
-          <strong>
-            ${p.score}
-          </strong>
-
-        </div>
-      `;
-
-    }).join("");
+  `;
 
 }
 
 
-// FINAL PODIUM
+// ============================================================
+// QUESTION
+// ============================================================
 
-function podium(list, target) {
+socket.on(
+  "question",
+
+  q => {
+
+    current = q;
+
+
+    // CLEAR OLD QUESTION ALERTS
+
+    violationPlayers.clear();
+
+
+    show("host");
+
+
+    // HIDE NORMAL PLAYER REMOVE LIST
+    // AFTER QUIZ STARTS
+
+    if (
+      $("playerManage")
+    ) {
+
+      $("playerManage")
+        .classList
+        .add("hidden");
+
+    }
+
+
+    $("hostQnum").textContent =
+      `QUESTION ${q.index + 1} / ${q.total}`;
+
+
+    $("hostQuestion").textContent =
+      q.question;
+
+
+    $("hostStatus").textContent =
+      "📖 READING TIME";
+
+
+    // SCRAMBLED WORD QUESTION
+
+    if (
+      isScrambledQuestion(q)
+    ) {
+
+      renderScrambledQuestion(q);
+
+    }
+
+
+    // NORMAL MCQ QUESTION
+
+    else {
+
+      renderMCQQuestion(q);
+
+    }
+
+
+    runTimer(q);
+
+  }
+);
+
+
+// ============================================================
+// REVEAL ANSWER
+// ============================================================
+
+socket.on(
+  "reveal",
+
+  d => {
+
+    clearInterval(tick);
+
+
+    // ========================================================
+    // SCRAMBLED WORD ANSWER
+    // ========================================================
+
+    if (
+      current &&
+      isScrambledQuestion(current)
+    ) {
+
+      const reveal =
+        $("hostScrambledReveal");
+
+
+      if (reveal) {
+
+        reveal.classList.remove(
+          "hidden"
+        );
+
+
+        reveal.textContent =
+          `CORRECT ANSWER: ${d.answerText}`;
+
+      }
+
+
+      $("hostStatus").textContent =
+        `Correct answer: ${d.answerText}`;
+
+
+      renderTop(
+        d.leaderboard
+      );
+
+
+      return;
+
+    }
+
+
+    // ========================================================
+    // MCQ ANSWER
+    // ========================================================
+
+    document
+      .querySelectorAll(
+        "#hostOptions .option"
+      )
+      .forEach(
+        (b, i) => {
+
+          if (
+            i === d.answer
+          ) {
+
+            b.classList.add(
+              "correct"
+            );
+
+          }
+
+          else {
+
+            b.classList.add(
+              "dim"
+            );
+
+          }
+
+        }
+      );
+
+
+    const answerLetter =
+      Number.isInteger(d.answer)
+
+        ? "ABCD"[d.answer]
+
+        : "";
+
+
+    $("hostStatus").textContent =
+      `Correct answer: ${
+        answerLetter
+      } - ${
+        d.answerText || ""
+      }`;
+
+
+    renderTop(
+      d.leaderboard
+    );
+
+  }
+);
+
+
+// ============================================================
+// FINAL RANKING
+// ============================================================
+
+function ranks(
+  list,
+  target
+) {
+
+  $(target).innerHTML =
+    list.map(
+      (p, i) => {
+
+        const safeName =
+          escapeHTML(p.name);
+
+
+        const safeRegisterNo =
+          escapeHTML(
+            p.registerNo
+          );
+
+
+        return `
+
+          <div class="rankRow">
+
+            <b>
+              #${i + 1}
+            </b>
+
+
+            <span>
+
+              ${safeName}
+
+              <small>
+                · ${safeRegisterNo}
+                · ${p.correct} correct
+              </small>
+
+            </span>
+
+
+            <strong>
+              ${p.score}
+            </strong>
+
+          </div>
+
+        `;
+
+      }
+    ).join("");
+
+}
+
+
+// ============================================================
+// FINAL PODIUM
+// ============================================================
+
+function podium(
+  list,
+  target
+) {
 
   const order = [
     list[1],
@@ -584,130 +895,167 @@ function podium(list, target) {
 
 
   $(target).innerHTML =
-    order.map((p, i) => {
+    order.map(
+      (p, i) => {
 
-      if (!p) {
-        return "";
-      }
+        if (!p) {
+
+          return "";
+
+        }
 
 
-      const safeName =
-        escapeHTML(p.name);
+        const safeName =
+          escapeHTML(p.name);
 
 
-      return `
-        <div
-          class="podiumItem ${
-            i === 1 ? "first" : ""
-          }"
-        >
+        return `
 
-          <div>
-            ${medals[i]}
+          <div
+            class="podiumItem ${
+              i === 1
+                ? "first"
+                : ""
+            }"
+          >
+
+            <div>
+              ${medals[i]}
+            </div>
+
+
+            <strong>
+              ${safeName}
+            </strong>
+
+
+            <span>
+              ${p.score}
+            </span>
+
           </div>
 
-          <strong>
-            ${safeName}
-          </strong>
+        `;
 
-          <span>
-            ${p.score}
-          </span>
-
-        </div>
-      `;
-
-    }).join("");
+      }
+    ).join("");
 
 }
 
 
+// ============================================================
 // QUIZ FINISHED
-
-socket.on("quiz:finished", d => {
-
-  clearInterval(tick);
-
-
-  show("hostFinal");
-
-
-  podium(
-    d.leaderboard,
-    "hostPodium"
-  );
-
-
-  ranks(
-    d.leaderboard,
-    "hostRanking"
-  );
-
-});
-
-
-// QUIZ RESET
+// ============================================================
 
 socket.on(
-  "quiz:reset",
-  () => location.reload()
+  "quiz:finished",
+
+  d => {
+
+    clearInterval(tick);
+
+
+    show(
+      "hostFinal"
+    );
+
+
+    podium(
+      d.leaderboard,
+      "hostPodium"
+    );
+
+
+    ranks(
+      d.leaderboard,
+      "hostRanking"
+    );
+
+  }
 );
 
 
-// ANTI-CHEAT HOST WARNING
+// ============================================================
+// QUIZ RESET
+// ============================================================
 
-socket.on("host:violation", d => {
+socket.on(
+  "quiz:reset",
 
-  // IGNORE OLD QUESTION EVENT
+  () => {
 
-  if (
-    !current ||
-    d.index !== current.index
-  ) {
-
-    return;
+    location.reload();
 
   }
+);
 
 
-  // PLAYER + CURRENT QUESTION KEY
+// ============================================================
+// ANTI-CHEAT HOST WARNING
+// ============================================================
 
-  const key =
-    `${d.playerId || d.id}:${d.index}`;
+socket.on(
+  "host:violation",
 
+  d => {
 
-  violationPlayers.set(
-    key,
-    {
-      playerId:
-        d.playerId || d.id,
+    // IGNORE OLD QUESTION EVENT
 
-      name:
-        d.name,
+    if (
+      !current ||
+      d.index !== current.index
+    ) {
 
-      registerNo:
-        d.registerNo,
+      return;
 
-      index:
-        d.index,
-
-      questionNumber:
-        d.questionNumber ||
-        d.index + 1,
-
-      blocked:
-        true
     }
-  );
 
 
-  renderViolationPlayers();
+    // PLAYER + CURRENT QUESTION KEY
 
-});
+    const key =
+      `${
+        d.playerId ||
+        d.id
+      }:${d.index}`;
 
 
-// RENDER CURRENT QUESTION
-// ANTI-CHEAT ALERTS
+    violationPlayers.set(
+      key,
+
+      {
+        playerId:
+          d.playerId ||
+          d.id,
+
+        name:
+          d.name,
+
+        registerNo:
+          d.registerNo,
+
+        index:
+          d.index,
+
+        questionNumber:
+          d.questionNumber ||
+          d.index + 1,
+
+        blocked:
+          true
+      }
+    );
+
+
+    renderViolationPlayers();
+
+  }
+);
+
+
+// ============================================================
+// RENDER CURRENT QUESTION ANTI-CHEAT ALERTS
+// ============================================================
 
 function renderViolationPlayers() {
 
@@ -720,10 +1068,18 @@ function renderViolationPlayers() {
   );
 
 
-  if (alerts.length === 0) {
+  if (
+    alerts.length === 0
+  ) {
 
     $("hostStatus").textContent =
-      "Students are answering...";
+      current &&
+      isScrambledQuestion(current)
+
+        ? "Players are typing answers..."
+
+        : "Students are answering...";
+
 
     return;
 
@@ -733,78 +1089,91 @@ function renderViolationPlayers() {
   $("hostStatus").innerHTML =
     "🚨 ANTI-CHEAT ALERTS<br>" +
 
-    alerts.map(p => {
+    alerts.map(
+      p => {
 
-      const safeName =
-        escapeHTML(p.name);
-
-      const safeRegisterNo =
-        escapeHTML(p.registerNo);
-
-      const safePlayerId =
-        escapeHTML(p.playerId);
+        const safeName =
+          escapeHTML(p.name);
 
 
-      return `
-        🚫 ${safeName}
-        | Roll ${safeRegisterNo}
-        | QUESTION ${p.questionNumber} BLOCKED
+        const safeRegisterNo =
+          escapeHTML(
+            p.registerNo
+          );
 
-        <button
-          class="danger removeBlockedBtn"
-          data-id="${safePlayerId}"
-        >
-          REMOVE
-        </button>
-      `;
 
-    }).join("<br>");
+        const safePlayerId =
+          escapeHTML(
+            p.playerId
+          );
+
+
+        return `
+
+          🚫 ${safeName}
+          | Roll ${safeRegisterNo}
+          | QUESTION ${p.questionNumber} BLOCKED
+
+          <button
+            class="danger removeBlockedBtn"
+            data-id="${safePlayerId}"
+          >
+            REMOVE
+          </button>
+
+        `;
+
+      }
+    ).join("<br>");
 
 
   document
     .querySelectorAll(
       ".removeBlockedBtn"
     )
-    .forEach(btn => {
+    .forEach(
+      btn => {
 
-      btn.onclick = () => {
+        btn.onclick = () => {
 
-        const playerId =
-          btn.dataset.id;
-
-
-        const player =
-          joinedPlayers.find(
-            p => p.id === playerId
-          );
+          const playerId =
+            btn.dataset.id;
 
 
-        if (!player) {
-
-          alert(
-            "Player not found"
-          );
-
-          return;
-
-        }
+          const player =
+            joinedPlayers.find(
+              p =>
+                p.id === playerId
+            );
 
 
-        if (
-          !confirm(
-            `Remove ${player.name} from quiz?`
-          )
-        ) {
+          if (!player) {
 
-          return;
+            alert(
+              "Player not found"
+            );
 
-        }
+            return;
+
+          }
 
 
-        removePlayer(player);
+          if (
+            !confirm(
+              `Remove ${player.name} from quiz?`
+            )
+          ) {
 
-      };
+            return;
 
-    });
+          }
+
+
+          removePlayer(player);
+
+        };
+
+      }
+    );
 
 }

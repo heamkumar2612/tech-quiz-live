@@ -1,93 +1,270 @@
 const socket = io();
-const $ = id => document.getElementById(id);
+
+const $ = id =>
+  document.getElementById(id);
+
 
 let me = null;
+
 let current = null;
+
 let answered = false;
+
 let tick = null;
 
+
 // BLOCK IS ONLY FOR CURRENT QUESTION
+
 let questionBlocked = false;
+
+
+// PREVENT MULTIPLE VISIBILITY REPORTS
 
 let visibilityReporting = false;
 
 
+// ============================================================
 // SHOW SECTION
+// ============================================================
 
 function show(id) {
 
-  ["join", "lobby", "game", "final"].forEach(
-    x => $(x).classList.toggle(
-      "hidden",
-      x !== id
-    )
+  [
+    "join",
+    "lobby",
+    "game",
+    "final"
+  ].forEach(
+    x => {
+
+      const element = $(x);
+
+      if (element) {
+
+        element.classList.toggle(
+          "hidden",
+          x !== id
+        );
+
+      }
+
+    }
   );
 
 }
 
 
+// ============================================================
+// CHECK QUESTION TYPE
+// ============================================================
+
+function isScrambledQuestion() {
+
+  return (
+    current &&
+    current.type === "scrambled"
+  );
+
+}
+
+
+// ============================================================
 // PLAYER JOIN
+// ============================================================
 
-$("joinBtn").onclick = () => socket.emit(
-  "player:join",
-  {
-    code: $("code").value,
-    name: $("name").value,
-    registerNo: $("reg").value
-  },
-  r => {
+$("joinBtn").onclick = () => {
 
-    if (!r?.ok) {
+  socket.emit(
+    "player:join",
+
+    {
+      code:
+        $("code").value,
+
+      name:
+        $("name").value,
+
+      registerNo:
+        $("reg").value
+    },
+
+    r => {
+
+      if (!r?.ok) {
+
+        $("joinMsg").textContent =
+          r?.error ||
+          "Could not join";
+
+        return;
+
+      }
+
+
+      me = r.player;
+
+
+      $("playerName").textContent =
+        me.name;
+
 
       $("joinMsg").textContent =
-        r?.error || "Could not join";
+        "";
 
-      return;
+
+      show("lobby");
 
     }
+  );
+
+};
 
 
-    me = r.player;
+// ============================================================
+// LOBBY UPDATE
+// ============================================================
 
+socket.on(
+  "lobby:update",
 
-    $("playerName").textContent =
-      me.name;
+  d => {
 
-
-    $("joinMsg").textContent =
-      "";
-
-
-    show("lobby");
+    $("lobbyCount").textContent =
+      d.count;
 
   }
 );
 
 
-// LOBBY UPDATE
-
-socket.on("lobby:update", d => {
-
-  $("lobbyCount").textContent =
-    d.count;
-
-});
-
-
+// ============================================================
 // QUIZ STARTED
+// ============================================================
 
-socket.on("quiz:started", () => {
+socket.on(
+  "quiz:started",
 
-  $("status").textContent =
-    "Get ready...";
+  () => {
 
-
-  show("game");
-
-});
+    $("status").textContent =
+      "Get ready...";
 
 
+    show("game");
+
+  }
+);
+
+
+// ============================================================
+// DISABLE ANSWER CONTROLS
+// ============================================================
+
+function disableOptions() {
+
+  document
+    .querySelectorAll(".option")
+    .forEach(
+      b => {
+
+        b.disabled = true;
+
+      }
+    );
+
+
+  const input =
+    $("scrambledInput");
+
+
+  const button =
+    $("scrambledSubmit");
+
+
+  if (input) {
+
+    input.disabled = true;
+
+  }
+
+
+  if (button) {
+
+    button.disabled = true;
+
+  }
+
+}
+
+
+// ============================================================
+// ENABLE ANSWER CONTROLS
+// ============================================================
+
+function enableAnswerControls() {
+
+  if (
+    answered ||
+    questionBlocked
+  ) {
+
+    return;
+
+  }
+
+
+  if (isScrambledQuestion()) {
+
+    const input =
+      $("scrambledInput");
+
+
+    const button =
+      $("scrambledSubmit");
+
+
+    if (input) {
+
+      input.disabled = false;
+
+    }
+
+
+    if (button) {
+
+      button.disabled = false;
+
+    }
+
+
+    $("status").textContent =
+      "Type the unscrambled word";
+
+  }
+
+  else {
+
+    document
+      .querySelectorAll(".option")
+      .forEach(
+        b => {
+
+          b.disabled = false;
+
+        }
+      );
+
+
+    $("status").textContent =
+      "Choose your answer";
+
+  }
+
+}
+
+
+// ============================================================
 // TIMER + 5 SECOND READING TIME
+// ============================================================
 
 function runTimer(payload) {
 
@@ -106,148 +283,232 @@ function runTimer(payload) {
   disableOptions();
 
 
-  tick = setInterval(() => {
+  tick = setInterval(
+    () => {
 
-    const now =
-      Date.now();
-
-
-    // CURRENT QUESTION BLOCKED
-
-    if (questionBlocked) {
-
-      disableOptions();
-
-      return;
-
-    }
+      const now =
+        Date.now();
 
 
-    // 5 SECOND READING TIME
+      // CURRENT QUESTION BLOCKED
 
-    if (now < answerStart) {
+      if (questionBlocked) {
 
-      const readingLeft =
-        Math.ceil(
-          (answerStart - now) / 1000
+        disableOptions();
+
+        return;
+
+      }
+
+
+      // 5 SECOND READING TIME
+
+      if (now < answerStart) {
+
+        const readingLeft =
+          Math.ceil(
+            (
+              answerStart -
+              now
+            ) / 1000
+          );
+
+
+        $("timer").textContent =
+          readingLeft;
+
+
+        $("timerBar").style.transform =
+          `scaleX(${
+            readingLeft /
+            payload.readingTime
+          })`;
+
+
+        $("status").textContent =
+          `📖 READ QUESTION - ${readingLeft}`;
+
+
+        return;
+
+      }
+
+
+      // 20 SECOND ANSWERING TIME
+
+      const left =
+        Math.max(
+          0,
+
+          (
+            answerEnd -
+            now
+          ) / 1000
         );
 
 
       $("timer").textContent =
-        readingLeft;
+        Math.ceil(left);
 
 
       $("timerBar").style.transform =
-        `scaleX(${readingLeft / payload.readingTime})`;
+        `scaleX(${
+          left /
+          payload.duration
+        })`;
 
 
-      $("status").textContent =
-        `📖 READ QUESTION - ${readingLeft}`;
+      if (!answered) {
+
+        enableAnswerControls();
+
+      }
 
 
-      return;
+      // TIME OVER
 
-    }
+      if (left <= 0) {
 
-
-    // 20 SECOND ANSWERING TIME
-
-    const left =
-      Math.max(
-        0,
-        (answerEnd - now) / 1000
-      );
+        clearInterval(tick);
 
 
-    $("timer").textContent =
-      Math.ceil(left);
+        disableOptions();
 
 
-    $("timerBar").style.transform =
-      `scaleX(${left / payload.duration})`;
+        $("status").textContent =
+          answered
+            ? "Answer locked!"
+            : "TIME UP!";
+
+      }
+
+    },
+
+    50
+  );
+
+}
 
 
-    if (!answered) {
+// ============================================================
+// SUBMIT SCRAMBLED ANSWER
+// ============================================================
 
-      document
-        .querySelectorAll(".option")
-        .forEach(
-          b => b.disabled = false
-        );
+function submitScrambledAnswer(q) {
+
+  if (
+    answered ||
+    questionBlocked
+  ) {
+
+    return;
+
+  }
 
 
-      $("status").textContent =
-        "Choose your answer";
-
-    }
+  const input =
+    $("scrambledInput");
 
 
-    if (left <= 0) {
+  if (!input) {
 
-      clearInterval(tick);
+    return;
+
+  }
+
+
+  const textAnswer =
+    input.value.trim();
+
+
+  if (!textAnswer) {
+
+    $("status").textContent =
+      "Enter your answer";
+
+    input.focus();
+
+    return;
+
+  }
+
+
+  // DO NOT SET ANSWERED TRUE YET.
+  // WAIT UNTIL SERVER ACCEPTS ANSWER.
+
+  disableOptions();
+
+
+  $("status").textContent =
+    "Submitting answer...";
+
+
+  socket.emit(
+    "answer",
+
+    {
+      index:
+        q.index,
+
+      textAnswer:
+        textAnswer
+    },
+
+    r => {
+
+      if (!r?.ok) {
+
+        if (
+          String(
+            r?.error || ""
+          )
+            .toLowerCase()
+            .includes("blocked")
+        ) {
+
+          questionBlocked = true;
+
+        }
+
+
+        disableOptions();
+
+
+        $("status").textContent =
+          r?.error ||
+          "Could not submit";
+
+
+        return;
+
+      }
+
+
+      answered = true;
 
 
       disableOptions();
 
 
+      input.classList.add(
+        "selected"
+      );
+
+
       $("status").textContent =
-        answered
-          ? "Answer locked!"
-          : "TIME UP!";
+        "Answer locked!";
 
     }
-
-  }, 50);
-
-}
-
-
-// DISABLE OPTIONS
-
-function disableOptions() {
-
-  document
-    .querySelectorAll(".option")
-    .forEach(
-      b => b.disabled = true
-    );
+  );
 
 }
 
 
-// QUESTION
+// ============================================================
+// RENDER MCQ QUESTION
+// ============================================================
 
-socket.on("question", q => {
-
-  current = q;
-
-
-  answered = false;
-
-
-  // IMPORTANT:
-  // NEXT QUESTION IS UNBLOCKED
-
-  questionBlocked = false;
-
-
-  visibilityReporting = false;
-
-
-  show("game");
-
-
-  $("qnum").textContent =
-    `${q.index + 1} / ${q.total}`;
-
-
-  $("question").textContent =
-    q.question;
-
-
-  $("status").textContent =
-    "📖 READ QUESTION";
-
+function renderMCQ(q) {
 
   $("options").innerHTML =
     q.options.map(
@@ -271,181 +532,459 @@ socket.on("question", q => {
 
   document
     .querySelectorAll(".option")
-    .forEach(b => {
+    .forEach(
+      b => {
 
-      b.onclick = () => {
+        b.onclick = () => {
 
-        if (
-          answered ||
-          questionBlocked
-        ) {
+          if (
+            answered ||
+            questionBlocked
+          ) {
 
-          return;
+            return;
 
-        }
-
-
-        answered = true;
+          }
 
 
-        disableOptions();
+          // DO NOT SET ANSWERED TRUE
+          // UNTIL SERVER ACCEPTS ANSWER
 
 
-        b.classList.add(
-          "selected"
-        );
+          disableOptions();
 
 
-        $("status").textContent =
-          "Answer locked!";
+          b.classList.add(
+            "selected"
+          );
 
 
-        socket.emit(
-          "answer",
-          {
-            index: q.index,
-            option: +b.dataset.i
-          },
-          r => {
+          $("status").textContent =
+            "Submitting answer...";
 
-            if (!r?.ok) {
 
-              // SERVER SAYS CURRENT
-              // QUESTION IS BLOCKED
+          socket.emit(
+            "answer",
 
-              if (
-                String(
-                  r?.error || ""
-                )
-                  .toLowerCase()
-                  .includes("blocked")
-              ) {
+            {
+              index:
+                q.index,
 
-                questionBlocked = true;
+              option:
+                +b.dataset.i
+            },
+
+            r => {
+
+              if (!r?.ok) {
+
+                if (
+                  String(
+                    r?.error || ""
+                  )
+                    .toLowerCase()
+                    .includes("blocked")
+                ) {
+
+                  questionBlocked = true;
+
+                }
+
+
+                disableOptions();
+
+
+                $("status").textContent =
+                  r?.error ||
+                  "Could not submit";
+
+
+                return;
 
               }
+
+
+              answered = true;
 
 
               disableOptions();
 
 
               $("status").textContent =
-                r?.error ||
-                "Could not submit";
+                "Answer locked!";
 
             }
+          );
 
-          }
-        );
+        };
 
-      };
+      }
+    );
 
-    });
-
-
-  runTimer(q);
-
-});
+}
 
 
-// ANSWER RESULT
+// ============================================================
+// RENDER SCRAMBLED WORD QUESTION
+// ============================================================
 
-socket.on("answer:result", r => {
+function renderScrambled(q) {
 
-  $("score").textContent =
-    r.score;
+  $("options").innerHTML = `
 
+    <div class="scrambledRound">
 
-  $("status").textContent =
-    r.correct
-
-      ? `CORRECT! +${r.points} POINTS`
-
-      : "WRONG ANSWER";
-
-});
+      <div class="scrambledLabel">
+        🔀 SCRAMBLED WORD
+      </div>
 
 
-// PLAYER VIOLATION
+      <div class="scrambledWord">
+        ${q.scrambled}
+      </div>
 
-socket.on("player:violation", d => {
 
-  if (
-    !current ||
-    d.index !== current.index
-  ) {
+      <input
+        id="scrambledInput"
+        class="scrambledInput"
+        type="text"
+        placeholder="Type your answer"
+        autocomplete="off"
+        autocapitalize="characters"
+        spellcheck="false"
+        disabled
+      >
 
-    return;
+
+      <button
+        id="scrambledSubmit"
+        class="scrambledSubmit"
+        disabled
+      >
+        SUBMIT ANSWER
+      </button>
+
+
+      <div
+        id="scrambledReveal"
+        class="scrambledReveal hidden"
+      ></div>
+
+    </div>
+
+  `;
+
+
+  const input =
+    $("scrambledInput");
+
+
+  const submit =
+    $("scrambledSubmit");
+
+
+  submit.onclick = () => {
+
+    submitScrambledAnswer(q);
+
+  };
+
+
+  input.addEventListener(
+    "keydown",
+
+    e => {
+
+      if (e.key === "Enter") {
+
+        e.preventDefault();
+
+
+        submitScrambledAnswer(q);
+
+      }
+
+    }
+  );
+
+}
+
+
+// ============================================================
+// QUESTION
+// ============================================================
+
+socket.on(
+  "question",
+
+  q => {
+
+    current = q;
+
+
+    answered = false;
+
+
+    // NEXT QUESTION IS UNBLOCKED
+
+    questionBlocked = false;
+
+
+    visibilityReporting = false;
+
+
+    show("game");
+
+
+    $("qnum").textContent =
+      `${q.index + 1} / ${q.total}`;
+
+
+    $("question").textContent =
+      q.question;
+
+
+    $("status").textContent =
+      "📖 READ QUESTION";
+
+
+    // SCRAMBLED QUESTION
+
+    if (
+      q.type === "scrambled"
+    ) {
+
+      renderScrambled(q);
+
+    }
+
+
+    // MCQ QUESTION
+
+    else {
+
+      renderMCQ(q);
+
+    }
+
+
+    runTimer(q);
 
   }
+);
 
 
-  if (d.blocked) {
+// ============================================================
+// ANSWER RESULT
+// ============================================================
 
-    questionBlocked = true;
+socket.on(
+  "answer:result",
+
+  r => {
+
+    $("score").textContent =
+      r.score;
+
+
+    $("status").textContent =
+      r.correct
+
+        ? `CORRECT! +${r.points} POINTS`
+
+        : "WRONG ANSWER";
+
+  }
+);
+
+
+// ============================================================
+// PLAYER VIOLATION
+// ============================================================
+
+socket.on(
+  "player:violation",
+
+  d => {
+
+    if (
+      !current ||
+      d.index !== current.index
+    ) {
+
+      return;
+
+    }
+
+
+    if (d.blocked) {
+
+      questionBlocked = true;
+
+
+      disableOptions();
+
+
+      $("status").textContent =
+        `🚫 QUESTION ${d.questionNumber} BLOCKED - APP/SCREEN SWITCH DETECTED`;
+
+    }
+
+  }
+);
+
+
+// ============================================================
+// REVEAL ANSWER
+// ============================================================
+
+socket.on(
+  "reveal",
+
+  d => {
+
+    clearInterval(tick);
 
 
     disableOptions();
 
 
-    $("status").textContent =
-      `🚫 QUESTION ${d.questionNumber} BLOCKED - APP/SCREEN SWITCH DETECTED`;
+    // ========================================================
+    // SCRAMBLED WORD REVEAL
+    // ========================================================
+
+    if (
+      current &&
+      current.type === "scrambled"
+    ) {
+
+      const reveal =
+        $("scrambledReveal");
+
+
+      const input =
+        $("scrambledInput");
+
+
+      if (reveal) {
+
+        reveal.classList.remove(
+          "hidden"
+        );
+
+
+        reveal.textContent =
+          `CORRECT ANSWER: ${d.answerText}`;
+
+      }
+
+
+      if (input) {
+
+        const playerAnswer =
+          input.value
+            .trim()
+            .replace(/\s+/g, " ")
+            .toUpperCase();
+
+
+        const correctAnswer =
+          String(
+            d.answerText || ""
+          )
+            .trim()
+            .replace(/\s+/g, " ")
+            .toUpperCase();
+
+
+        if (
+          playerAnswer &&
+          playerAnswer === correctAnswer
+        ) {
+
+          input.classList.add(
+            "correct"
+          );
+
+        }
+
+        else if (playerAnswer) {
+
+          input.classList.add(
+            "wrong"
+          );
+
+        }
+
+      }
+
+
+      $("status").textContent =
+        `ANSWER: ${d.answerText}`;
+
+
+      return;
+
+    }
+
+
+    // ========================================================
+    // MCQ REVEAL
+    // ========================================================
+
+    document
+      .querySelectorAll(".option")
+      .forEach(
+        (b, i) => {
+
+          b.disabled = true;
+
+
+          if (
+            i === d.answer
+          ) {
+
+            b.classList.add(
+              "correct"
+            );
+
+          }
+
+          else if (
+            b.classList.contains(
+              "selected"
+            )
+          ) {
+
+            b.classList.add(
+              "wrong"
+            );
+
+          }
+
+          else {
+
+            b.classList.add(
+              "dim"
+            );
+
+          }
+
+        }
+      );
 
   }
-
-});
-
-
-// REVEAL ANSWER
-
-socket.on("reveal", d => {
-
-  clearInterval(tick);
+);
 
 
-  document
-    .querySelectorAll(".option")
-    .forEach((b, i) => {
-
-      b.disabled = true;
-
-
-      if (i === d.answer) {
-
-        b.classList.add(
-          "correct"
-        );
-
-      }
-
-      else if (
-        b.classList.contains(
-          "selected"
-        )
-      ) {
-
-        b.classList.add(
-          "wrong"
-        );
-
-      }
-
-      else {
-
-        b.classList.add(
-          "dim"
-        );
-
-      }
-
-    });
-
-});
-
-
+// ============================================================
 // FINAL RANKING
+// ============================================================
 
-function renderRanks(list, target) {
+function renderRanks(
+  list,
+  target
+) {
 
   $(target).innerHTML =
     list.map(
@@ -478,9 +1017,14 @@ function renderRanks(list, target) {
 }
 
 
+// ============================================================
 // FINAL PODIUM
+// ============================================================
 
-function renderPodium(list, target) {
+function renderPodium(
+  list,
+  target
+) {
 
   const order = [
     list[1],
@@ -529,39 +1073,54 @@ function renderPodium(list, target) {
 }
 
 
+// ============================================================
 // QUIZ FINISHED
-
-socket.on("quiz:finished", d => {
-
-  clearInterval(tick);
-
-
-  show("final");
-
-
-  renderPodium(
-    d.leaderboard,
-    $("podium").id
-  );
-
-
-  renderRanks(
-    d.leaderboard,
-    "ranking"
-  );
-
-});
-
-
-// QUIZ RESET
+// ============================================================
 
 socket.on(
-  "quiz:reset",
-  () => location.reload()
+  "quiz:finished",
+
+  d => {
+
+    clearInterval(tick);
+
+
+    show("final");
+
+
+    renderPodium(
+      d.leaderboard,
+      $("podium").id
+    );
+
+
+    renderRanks(
+      d.leaderboard,
+      "ranking"
+    );
+
+  }
 );
 
 
+// ============================================================
+// QUIZ RESET
+// ============================================================
+
+socket.on(
+  "quiz:reset",
+
+  () => {
+
+    location.reload();
+
+  }
+);
+
+
+// ============================================================
 // REPORT CURRENT QUESTION VIOLATION
+// ============================================================
 
 function reportViolation(type) {
 
@@ -583,9 +1142,12 @@ function reportViolation(type) {
 
   socket.emit(
     "player:visibilityViolation",
+
     {
-      index: current.index
+      index:
+        current.index
     },
+
     r => {
 
       visibilityReporting = false;
@@ -625,10 +1187,13 @@ function reportViolation(type) {
 }
 
 
+// ============================================================
 // APP / TAB SWITCH DETECTION
+// ============================================================
 
 document.addEventListener(
   "visibilitychange",
+
   () => {
 
     if (
@@ -648,10 +1213,13 @@ document.addEventListener(
 );
 
 
+// ============================================================
 // CIRCLE TO SEARCH / SCREEN SEARCH DETECTION
+// ============================================================
 
 window.addEventListener(
   "blur",
+
   () => {
 
     reportViolation(
@@ -662,10 +1230,13 @@ window.addEventListener(
 );
 
 
+// ============================================================
 // PLAYER REMOVED BY HOST
+// ============================================================
 
 socket.on(
   "player:removed",
+
   () => {
 
     clearInterval(tick);

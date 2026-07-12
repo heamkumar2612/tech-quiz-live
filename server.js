@@ -15,7 +15,6 @@ app.use(
 );
 
 app.get("/", (req, res) => {
-
   res.sendFile(
     path.join(
       __dirname,
@@ -23,7 +22,6 @@ app.get("/", (req, res) => {
       "index.html"
     )
   );
-
 });
 
 
@@ -41,45 +39,62 @@ let players = new Map();
 
 
 let quiz = {
-
   started: false,
   finished: false,
   index: -1,
   startedAt: 0,
   timer: null,
   answers: new Map()
-
 };
 
 
+// ============================================================
+// HELPER - CHECK SCRAMBLED QUESTION
+// ============================================================
+
+function isScrambledQuestion(q) {
+  return q && q.type === "scrambled";
+}
+
+
+// ============================================================
+// HELPER - NORMALIZE TYPED ANSWER
+// ============================================================
+
+function normalizeAnswer(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toUpperCase();
+}
+
+
+// ============================================================
 // PUBLIC PLAYER DATA
+// ============================================================
 
 const publicPlayers = () =>
-
   [...players.values()].map(
     ({ socketId, blockedQuestions, ...p }) => p
   );
 
 
+// ============================================================
 // LEADERBOARD
+// ============================================================
 
 const leaderboard = () =>
-
   publicPlayers().sort(
     (a, b) =>
-
       b.score - a.score ||
-
       b.correct - a.correct ||
-
-      a.name.localeCompare(
-        b.name
-      )
-
+      a.name.localeCompare(b.name)
   );
 
 
+// ============================================================
 // CURRENT QUESTION
+// ============================================================
 
 const currentPayload = () => {
 
@@ -87,56 +102,68 @@ const currentPayload = () => {
     quiz.index < 0 ||
     quiz.index >= questions.length
   ) {
-
     return null;
-
   }
 
 
-  const q =
-    questions[quiz.index];
+  const q = questions[quiz.index];
+
+  const scrambled =
+    isScrambledQuestion(q);
 
 
   return {
-
     index: quiz.index,
 
     total: questions.length,
 
+    type:
+      scrambled
+        ? "scrambled"
+        : "mcq",
+
     question: q.question,
 
-    options: q.options,
+    options:
+      scrambled
+        ? null
+        : q.options,
+
+    scrambled:
+      scrambled
+        ? q.scrambled
+        : null,
 
     duration: QUESTION_TIME,
 
     readingTime: READING_TIME,
 
     startedAt: quiz.startedAt
-
   };
 
 };
 
 
+// ============================================================
 // BROADCAST PLAYER LIST
+// ============================================================
 
 function broadcastLobby() {
 
   io.emit(
     "lobby:update",
     {
-
       count: players.size,
-
       players: publicPlayers()
-
     }
   );
 
 }
 
 
+// ============================================================
 // START QUESTION
+// ============================================================
 
 function startQuestion() {
 
@@ -152,9 +179,7 @@ function startQuestion() {
   // 5 SECOND READING TIME
 
   quiz.startedAt =
-
     Date.now() +
-
     READING_TIME * 1000;
 
 
@@ -166,20 +191,20 @@ function startQuestion() {
 
   quiz.timer =
     setTimeout(
-
       revealQuestion,
 
       (
         READING_TIME +
         QUESTION_TIME
       ) * 1000 + 250
-
     );
 
 }
 
 
+// ============================================================
 // REVEAL QUESTION
+// ============================================================
 
 function revealQuestion() {
 
@@ -193,9 +218,7 @@ function revealQuestion() {
     quiz.finished ||
     quiz.index < 0
   ) {
-
     return;
-
   }
 
 
@@ -203,22 +226,53 @@ function revealQuestion() {
     questions[quiz.index];
 
 
+  const scrambled =
+    isScrambledQuestion(q);
+
+
+  let revealedAnswer;
+
+
+  if (scrambled) {
+
+    revealedAnswer =
+      q.answer;
+
+  } else {
+
+    revealedAnswer =
+      q.answer;
+
+  }
+
+
   io.emit(
     "reveal",
     {
+      type:
+        scrambled
+          ? "scrambled"
+          : "mcq",
 
-      answer: q.answer,
+      answer:
+        revealedAnswer,
+
+      answerText:
+        scrambled
+          ? q.answer
+          : q.options[q.answer],
 
       leaderboard:
         leaderboard().slice(0, 5)
-
     }
   );
 
 }
 
 
+// ============================================================
 // FINISH QUIZ
+// ============================================================
 
 function finishQuiz() {
 
@@ -235,24 +289,26 @@ function finishQuiz() {
   io.emit(
     "quiz:finished",
     {
-
       leaderboard:
         leaderboard()
-
     }
   );
 
 }
 
 
+// ============================================================
 // SOCKET CONNECTION
+// ============================================================
 
 io.on(
   "connection",
   socket => {
 
 
+    // ========================================================
     // PLAYER JOIN
+    // ========================================================
 
     socket.on(
       "player:join",
@@ -267,20 +323,14 @@ io.on(
 
 
         name =
-
           String(name || "")
-
             .trim()
-
             .slice(0, 40);
 
 
         registerNo =
-
           String(registerNo || "")
-
             .trim()
-
             .slice(0, 30);
 
 
@@ -290,12 +340,9 @@ io.on(
         ) {
 
           return ack?.({
-
             ok: false,
-
             error:
               "Wrong quiz code"
-
           });
 
         }
@@ -307,12 +354,9 @@ io.on(
         ) {
 
           return ack?.({
-
             ok: false,
-
             error:
               "Enter name and roll number"
-
           });
 
         }
@@ -324,43 +368,31 @@ io.on(
         ) {
 
           return ack?.({
-
             ok: false,
-
             error:
               "Quiz already started"
-
           });
 
         }
 
 
         const duplicate =
-
           [...players.values()].some(
-
             p =>
-
               p.registerNo
                 .toLowerCase()
-
               ===
-
               registerNo
                 .toLowerCase()
-
           );
 
 
         if (duplicate) {
 
           return ack?.({
-
             ok: false,
-
             error:
               "Roll number already joined"
-
           });
 
         }
@@ -369,7 +401,6 @@ io.on(
         players.set(
           socket.id,
           {
-
             id: socket.id,
 
             name,
@@ -385,8 +416,8 @@ io.on(
             blockedQuestions:
               new Set(),
 
-            socketId: socket.id
-
+            socketId:
+              socket.id
           }
         );
 
@@ -400,12 +431,10 @@ io.on(
 
 
         ack?.({
-
           ok: true,
 
           player:
             players.get(socket.id)
-
         });
 
 
@@ -415,7 +444,9 @@ io.on(
     );
 
 
+    // ========================================================
     // HOST LOGIN
+    // ========================================================
 
     socket.on(
       "host:auth",
@@ -428,9 +459,7 @@ io.on(
         ) {
 
           return ack?.({
-
             ok: false
-
           });
 
         }
@@ -441,11 +470,9 @@ io.on(
 
 
         ack?.({
-
           ok: true,
 
           state: {
-
             started:
               quiz.started,
 
@@ -463,16 +490,16 @@ io.on(
 
             leaderboard:
               leaderboard()
-
           }
-
         });
 
       }
     );
 
 
+    // ========================================================
     // HOST MANUALLY REMOVE PLAYER
+    // ========================================================
 
     socket.on(
       "host:removePlayer",
@@ -484,12 +511,10 @@ io.on(
         ) {
 
           return ack?.({
-
             ok: false,
 
             error:
               "Host access required"
-
           });
 
         }
@@ -502,12 +527,10 @@ io.on(
         if (!player) {
 
           return ack?.({
-
             ok: false,
 
             error:
               "Player not found"
-
           });
 
         }
@@ -540,26 +563,24 @@ io.on(
 
 
         ack?.({
-
           ok: true,
 
           player: {
-
             name:
               player.name,
 
             registerNo:
               player.registerNo
-
           }
-
         });
 
       }
     );
 
 
+    // ========================================================
     // START QUIZ
+    // ========================================================
 
     socket.on(
       "host:start",
@@ -572,9 +593,7 @@ io.on(
           quiz.finished ||
           players.size === 0
         ) {
-
           return;
-
         }
 
 
@@ -594,7 +613,9 @@ io.on(
     );
 
 
+    // ========================================================
     // NEXT QUESTION
+    // ========================================================
 
     socket.on(
       "host:next",
@@ -605,9 +626,7 @@ io.on(
           socket.data.role !== "host" ||
           !quiz.started
         ) {
-
           return;
-
         }
 
 
@@ -630,7 +649,9 @@ io.on(
     );
 
 
+    // ========================================================
     // REVEAL ANSWER
+    // ========================================================
 
     socket.on(
       "host:reveal",
@@ -649,7 +670,9 @@ io.on(
     );
 
 
+    // ========================================================
     // RESET QUIZ
+    // ========================================================
 
     socket.on(
       "host:reset",
@@ -659,9 +682,7 @@ io.on(
         if (
           socket.data.role !== "host"
         ) {
-
           return;
-
         }
 
 
@@ -674,7 +695,6 @@ io.on(
 
 
         quiz = {
-
           started: false,
 
           finished: false,
@@ -685,8 +705,8 @@ io.on(
 
           timer: null,
 
-          answers: new Map()
-
+          answers:
+            new Map()
         };
 
 
@@ -701,8 +721,9 @@ io.on(
     );
 
 
-    // APP SWITCH /
-    // CIRCLE TO SEARCH DETECTION
+    // ========================================================
+    // APP SWITCH / CIRCLE TO SEARCH DETECTION
+    // ========================================================
 
     socket.on(
       "player:visibilityViolation",
@@ -723,9 +744,7 @@ io.on(
         ) {
 
           return ack?.({
-
             ok: false
-
           });
 
         }
@@ -741,8 +760,7 @@ io.on(
         }
 
 
-        // CURRENT QUESTION
-        // ALREADY BLOCKED
+        // CURRENT QUESTION ALREADY BLOCKED
 
         if (
           p.blockedQuestions.has(
@@ -751,7 +769,6 @@ io.on(
         ) {
 
           return ack?.({
-
             ok: true,
 
             blocked: true,
@@ -761,7 +778,6 @@ io.on(
 
             questionNumber:
               quiz.index + 1
-
           });
 
         }
@@ -785,7 +801,6 @@ io.on(
         io.to(socket.id).emit(
           "player:violation",
           {
-
             blocked: true,
 
             index:
@@ -793,7 +808,6 @@ io.on(
 
             questionNumber:
               quiz.index + 1
-
           }
         );
 
@@ -803,7 +817,6 @@ io.on(
         io.emit(
           "host:violation",
           {
-
             id:
               p.id,
 
@@ -823,13 +836,11 @@ io.on(
               quiz.index + 1,
 
             blocked: true
-
           }
         );
 
 
         ack?.({
-
           ok: true,
 
           blocked: true,
@@ -839,21 +850,24 @@ io.on(
 
           questionNumber:
             quiz.index + 1
-
         });
 
       }
     );
 
 
+    // ========================================================
     // PLAYER ANSWER
+    // SUPPORTS MCQ + SCRAMBLED WORD
+    // ========================================================
 
     socket.on(
       "answer",
       (
         {
           index,
-          option
+          option,
+          textAnswer
         },
         ack
       ) => {
@@ -872,9 +886,7 @@ io.on(
         ) {
 
           return ack?.({
-
             ok: false
-
           });
 
         }
@@ -890,12 +902,10 @@ io.on(
         ) {
 
           return ack?.({
-
             ok: false,
 
             error:
               `Question ${quiz.index + 1} blocked: app switching detected`
-
           });
 
         }
@@ -909,19 +919,16 @@ io.on(
         ) {
 
           return ack?.({
-
             ok: false,
 
             error:
               "Reading time - wait before answering"
-
           });
 
         }
 
 
         const elapsed =
-
           (
             Date.now() -
             quiz.startedAt
@@ -934,56 +941,120 @@ io.on(
         ) {
 
           return ack?.({
-
             ok: false,
 
             error:
               "Time over"
-
           });
 
         }
 
 
-        option =
-          Number(option);
+        const q =
+          questions[quiz.index];
 
 
-        if (
-          !Number.isInteger(option) ||
-          option < 0 ||
-          option >=
-            questions[quiz.index]
-              .options.length
-        ) {
+        const scrambled =
+          isScrambledQuestion(q);
 
-          return ack?.({
 
-            ok: false,
+        let playerAnswer;
 
-            error:
-              "Invalid answer"
+        let correct = false;
 
-          });
+
+        // ====================================================
+        // SCRAMBLED WORD ANSWER CHECK
+        // ====================================================
+
+        if (scrambled) {
+
+          playerAnswer =
+            normalizeAnswer(
+              textAnswer
+            );
+
+
+          if (!playerAnswer) {
+
+            return ack?.({
+              ok: false,
+
+              error:
+                "Enter your answer"
+            });
+
+          }
+
+
+          const correctAnswer =
+            normalizeAnswer(
+              q.answer
+            );
+
+
+          correct =
+            playerAnswer ===
+            correctAnswer;
+
+
+          quiz.answers.set(
+            socket.id,
+            playerAnswer
+          );
 
         }
 
 
-        quiz.answers.set(
-          socket.id,
-          option
-        );
+        // ====================================================
+        // MCQ ANSWER CHECK
+        // ====================================================
 
+        else {
+
+          option =
+            Number(option);
+
+
+          if (
+            !Number.isInteger(option) ||
+            option < 0 ||
+            option >=
+              q.options.length
+          ) {
+
+            return ack?.({
+              ok: false,
+
+              error:
+                "Invalid answer"
+            });
+
+          }
+
+
+          playerAnswer =
+            option;
+
+
+          correct =
+            option ===
+            q.answer;
+
+
+          quiz.answers.set(
+            socket.id,
+            option
+          );
+
+        }
+
+
+        // ====================================================
+        // UPDATE PLAYER STATS
+        // ====================================================
 
         p.answered++;
-
-
-        const correct =
-
-          option ===
-
-          questions[quiz.index]
-            .answer;
 
 
         let points = 0;
@@ -993,21 +1064,16 @@ io.on(
 
 
           const remaining =
-
             Math.max(
-
               0,
 
               QUESTION_TIME -
               elapsed
-
             );
 
 
           points =
-
             Math.round(
-
               MIN_CORRECT +
 
               SPEED_BONUS *
@@ -1016,7 +1082,6 @@ io.on(
                 remaining /
                 QUESTION_TIME
               )
-
             );
 
 
@@ -1035,8 +1100,11 @@ io.on(
         );
 
 
-        ack?.({
+        // ====================================================
+        // ACKNOWLEDGE ANSWER
+        // ====================================================
 
+        ack?.({
           ok: true,
 
           correct,
@@ -1044,22 +1112,33 @@ io.on(
           points,
 
           score:
-            p.score
+            p.score,
 
+          type:
+            scrambled
+              ? "scrambled"
+              : "mcq"
         });
 
+
+        // ====================================================
+        // SEND RESULT TO PLAYER
+        // ====================================================
 
         io.to(socket.id).emit(
           "answer:result",
           {
-
             correct,
 
             points,
 
             score:
-              p.score
+              p.score,
 
+            type:
+              scrambled
+                ? "scrambled"
+                : "mcq"
           }
         );
 
@@ -1067,7 +1146,9 @@ io.on(
     );
 
 
+    // ========================================================
     // PLAYER DISCONNECT
+    // ========================================================
 
     socket.on(
       "disconnect",
@@ -1097,6 +1178,10 @@ io.on(
 );
 
 
+// ============================================================
+// SERVER PORT
+// ============================================================
+
 const PORT =
   process.env.PORT || 3000;
 
@@ -1107,6 +1192,18 @@ server.listen(
 
     console.log(
       `Quiz running on port ${PORT}`
+    );
+
+    console.log(
+      `Total questions: ${questions.length}`
+    );
+
+    console.log(
+      "Q1-Q65: MCQ"
+    );
+
+    console.log(
+      "Q66-Q95: Scrambled Word Round"
     );
 
   }

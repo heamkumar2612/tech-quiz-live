@@ -1,172 +1,331 @@
 <!doctype html>
+
 <html lang="en">
 
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
 
-<title>Tech Quiz Host</title>
+  <meta charset="utf-8">
 
-<link rel="stylesheet" href="style.css">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>
+    Tech Quiz Host
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
+
 </head>
+
 
 <body>
 
-<div class="bg"></div>
 
-<main class="shell hostShell">
-
-<section id="auth" class="card join">
-
-<div class="badge">HOST CONTROL</div>
-
-<h1>Tech Quiz Live</h1>
-
-<input
- id="hostCode"
- placeholder="Quiz code"
- inputmode="numeric"
->
-
-<button id="authBtn">
- OPEN CONTROL
-</button>
-
-<div id="authMsg" class="msg"></div>
-
-</section>
+  <div class="bg"></div>
 
 
-<section id="host" class="hidden">
-
-<header>
-
-<div>
- <b>HOST CONTROL</b>
- <span id="hostQnum">LOBBY</span>
-</div>
-
-<div class="score">
- <strong id="hostCount">0</strong>
- PLAYERS
-</div>
-
-</header>
+  <main class="shell hostShell">
 
 
-<div class="hostGrid">
+    <!-- =====================================================
+         HOST AUTHENTICATION
+    ====================================================== -->
 
-<div class="questionCard">
-
-<div id="hostTimer" class="timer">
- 20
-</div>
-
-<h1 id="hostQuestion">
- Waiting for players...
-</h1>
-
-<div
- id="hostOptions"
- class="options hostOptions"
-></div>
-
-</div>
+    <section
+      id="auth"
+      class="card join"
+    >
 
 
-<div class="card side">
-
-<h2>Top 5</h2>
-
-<div id="top5"></div>
+      <div class="badge">
+        HOST CONTROL
+      </div>
 
 
-<!-- JOINED PLAYER LIST -->
-
-<div id="playerManage">
-
-<h2>Joined Players</h2>
-
-<div id="hostPlayers">
- <p>No players joined</p>
-</div>
-
-</div>
+      <h1>
+        Tech Quiz Live
+      </h1>
 
 
-<div class="controls">
-
-<button id="startBtn">
- START QUIZ
-</button>
-
-<button
- id="revealBtn"
- class="secondary"
->
- REVEAL
-</button>
-
-<button id="nextBtn">
- NEXT QUESTION
-</button>
-
-<button
- id="resetBtn"
- class="danger"
->
- RESET
-</button>
-
-</div>
-
-</div>
-
-</div>
+      <input
+        id="hostCode"
+        placeholder="Quiz code"
+        inputmode="numeric"
+        autocomplete="off"
+      >
 
 
-<div class="timerWrap">
- <div id="hostTimerBar"></div>
-</div>
-
-<div
- id="hostStatus"
- class="status"
-></div>
-
-</section>
+      <button id="authBtn">
+        OPEN CONTROL
+      </button>
 
 
-<section
- id="hostFinal"
- class="card hidden"
->
-
-<div class="badge">
- FINAL LEADERBOARD
-</div>
-
-<h1>🏆 Winners</h1>
-
-<div
- id="hostPodium"
- class="podium"
-></div>
-
-<div id="hostRanking"></div>
-
-<button onclick="location.reload()">
- BACK TO CONTROL
-</button>
-
-</section>
-
-</main>
+      <div
+        id="authMsg"
+        class="msg"
+      ></div>
 
 
-<script src="/socket.io/socket.io.js"></script>
+    </section>
 
-<script src="host.js"></script>
+
+
+    <!-- =====================================================
+         HOST QUIZ CONTROL
+    ====================================================== -->
+
+    <section
+      id="host"
+      class="hidden"
+    >
+
+
+      <!-- HOST HEADER -->
+
+      <header>
+
+
+        <div>
+
+          <b>
+            HOST CONTROL
+          </b>
+
+          <span id="hostQnum">
+            LOBBY
+          </span>
+
+        </div>
+
+
+        <div class="score">
+
+          <strong id="hostCount">
+            0
+          </strong>
+
+          PLAYERS
+
+        </div>
+
+
+      </header>
+
+
+
+      <!-- ===================================================
+           HOST MAIN GRID
+      ==================================================== -->
+
+      <div class="hostGrid">
+
+
+        <!-- QUESTION / PROJECTOR AREA -->
+
+        <div class="questionCard">
+
+
+          <div
+            id="hostTimer"
+            class="timer"
+          >
+            20
+          </div>
+
+
+          <h1 id="hostQuestion">
+            Waiting for players...
+          </h1>
+
+
+          <!--
+            Q1 - Q65:
+            MCQ options appear here.
+
+            Q66 - Q95:
+            Scrambled word appears here.
+          -->
+
+          <div
+            id="hostOptions"
+            class="options hostOptions"
+          ></div>
+
+
+        </div>
+
+
+
+        <!-- =================================================
+             HOST SIDE PANEL
+        ================================================== -->
+
+        <div class="card side">
+
+
+          <!-- TOP 5 -->
+
+          <h2>
+            Top 5
+          </h2>
+
+
+          <div id="top5"></div>
+
+
+
+          <!-- JOINED PLAYER LIST -->
+
+          <div id="playerManage">
+
+
+            <h2>
+              Joined Players
+            </h2>
+
+
+            <div id="hostPlayers">
+
+              <p>
+                No players joined
+              </p>
+
+            </div>
+
+
+          </div>
+
+
+
+          <!-- HOST CONTROLS -->
+
+          <div class="controls">
+
+
+            <button id="startBtn">
+              START QUIZ
+            </button>
+
+
+            <button
+              id="revealBtn"
+              class="secondary"
+            >
+              REVEAL ANSWER
+            </button>
+
+
+            <button id="nextBtn">
+              NEXT QUESTION
+            </button>
+
+
+            <button
+              id="resetBtn"
+              class="danger"
+            >
+              RESET QUIZ
+            </button>
+
+
+          </div>
+
+
+        </div>
+
+
+      </div>
+
+
+
+      <!-- ===================================================
+           TIMER BAR
+      ==================================================== -->
+
+      <div class="timerWrap">
+
+        <div id="hostTimerBar"></div>
+
+      </div>
+
+
+
+      <!-- ===================================================
+           HOST STATUS / ANTI-CHEAT ALERT
+      ==================================================== -->
+
+      <div
+        id="hostStatus"
+        class="status"
+      ></div>
+
+
+    </section>
+
+
+
+    <!-- =====================================================
+         FINAL LEADERBOARD
+    ====================================================== -->
+
+    <section
+      id="hostFinal"
+      class="card hidden"
+    >
+
+
+      <div class="badge">
+        FINAL LEADERBOARD
+      </div>
+
+
+      <h1>
+        🏆 Winners
+      </h1>
+
+
+      <div
+        id="hostPodium"
+        class="podium"
+      ></div>
+
+
+      <div id="hostRanking"></div>
+
+
+      <button
+        onclick="location.reload()"
+      >
+        BACK TO CONTROL
+      </button>
+
+
+    </section>
+
+
+  </main>
+
+
+
+  <!-- =======================================================
+       SOCKET.IO
+  ======================================================== -->
+
+  <script src="/socket.io/socket.io.js"></script>
+
+
+
+  <!-- =======================================================
+       HOST APP
+  ======================================================== -->
+
+  <script src="host.js"></script>
+
 
 </body>
 

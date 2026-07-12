@@ -130,56 +130,6 @@ module.exports = [
     "answer": 2
   },
   {
-    "question": "A doubly linked list contains:",
-    "options": [
-      "One pointer",
-      "Two pointers",
-      "Three pointers",
-      "No pointers"
-    ],
-    "answer": 1
-  },
-  {
-    "question": "Which pointer points to the previous node in a doubly linked list?",
-    "options": [
-      "Head",
-      "Tail",
-      "Prev",
-      "Next"
-    ],
-    "answer": 2
-  },
-  {
-    "question": "Which linked list allows traversal in both forward and backward directions?",
-    "options": [
-      "Singly Linked List",
-      "Circular Linked List",
-      "Doubly Linked List",
-      "Array"
-    ],
-    "answer": 2
-  },
-  {
-    "question": "In a circular linked list, the last node points to:",
-    "options": [
-      "NULL",
-      "Previous node",
-      "First node",
-      "Tail"
-    ],
-    "answer": 2
-  },
-  {
-    "question": "Which linked list has no NULL pointer at the end?",
-    "options": [
-      "Singly Linked List",
-      "Doubly Linked List",
-      "Circular Linked List",
-      "Static List"
-    ],
-    "answer": 2
-  },
-  {
     "question": "Which data structure is best for frequent insertions and deletions?",
     "options": [
       "Array",
@@ -260,16 +210,6 @@ module.exports = [
     "answer": 0
   },
   {
-    "question": "Which linked list is commonly used in Round Robin CPU Scheduling?",
-    "options": [
-      "Singly Linked List",
-      "Doubly Linked List",
-      "Circular Linked List",
-      "Array"
-    ],
-    "answer": 2
-  },
-  {
     "question": "Which data structure requires contiguous memory allocation?",
     "options": [
       "Array",
@@ -296,36 +236,6 @@ module.exports = [
       "Fast Random Access",
       "Easy Insertion",
       "No Memory Wastage"
-    ],
-    "answer": 1
-  },
-  {
-    "question": "What is a data structure?",
-    "options": [
-      "A method of organizing data",
-      "A computer virus",
-      "A programming error",
-      "An operating system"
-    ],
-    "answer": 0
-  },
-  {
-    "question": "Which symbol is commonly used to access an array element?",
-    "options": [
-      "( )",
-      "[ ]",
-      "{ }",
-      "< >"
-    ],
-    "answer": 1
-  },
-  {
-    "question": "What is the index of the first element in a C array?",
-    "options": [
-      "-1",
-      "0",
-      "1",
-      "2"
     ],
     "answer": 1
   },
@@ -360,26 +270,6 @@ module.exports = [
     "answer": 2
   },
   {
-    "question": "Which array is used to store data in a single line?",
-    "options": [
-      "One-dimensional array",
-      "Two-dimensional array",
-      "Three-dimensional array",
-      "Circular array"
-    ],
-    "answer": 0
-  },
-  {
-    "question": "Rows and columns are commonly represented using:",
-    "options": [
-      "One-dimensional array",
-      "Two-dimensional array",
-      "Pointer only",
-      "Single variable"
-    ],
-    "answer": 1
-  },
-  {
     "question": "In int marks[5], what does 5 represent?",
     "options": [
       "Starting index",
@@ -388,196 +278,6 @@ module.exports = [
       "Memory address"
     ],
     "answer": 2
-  },
-  {
-    "question": "Which data structure consists of nodes?",
-    "options": [
-      "Array",
-      "Linked List",
-      "Integer",
-      "Character"
-    ],
-    "answer": 1
-  },
-  {
-    "question": "What is a node in a linked list?",
-    "options": [
-      "A compiler",
-      "A basic element that stores data and link information",
-      "An operating system",
-      "A loop statement"
-    ],
-    "answer": 1
-  },
-  {
-    "question": "Which part of a linked list node stores the actual value?",
-    "options": [
-      "Link",
-      "Pointer",
-      "Data field",
-      "Address field"
-    ],
-    "answer": 2
-  },
-  {
-    "question": "What connects one linked list node to another?",
-    "options": [
-      "Loop",
-      "Pointer",
-      "Array index",
-      "Compiler"
-    ],
-    "answer": 1
-  },
-  {
-    "question": "Which node comes at the end of a linked list?",
-    "options": [
-      "Head node",
-      "Root node",
-      "Tail node",
-      "Parent node"
-    ],
-    "answer": 2
-  },
-  {
-    "question": "What does NULL usually indicate in a linked list?",
-    "options": [
-      "Another data value",
-      "No valid next node",
-      "The first array element",
-      "A full list"
-    ],
-    "answer": 1
-  },
-  {
-    "question": "Which linked list moves only in the forward direction?",
-    "options": [
-      "Singly Linked List",
-      "Doubly Linked List",
-      "Circular Doubly Linked List",
-      "Matrix"
-    ],
-    "answer": 0
-  },
-  {
-    "question": "Which linked list has both previous and next links?",
-    "options": [
-      "Singly Linked List",
-      "Doubly Linked List",
-      "Array",
-      "One-Dimensional List"
-    ],
-    "answer": 1
-  },
-  {
-    "question": "In a doubly linked list, the next pointer is used to move:",
-    "options": [
-      "Backward",
-      "Forward",
-      "Upward",
-      "Randomly"
-    ],
-    "answer": 1
-  },
-  {
-    "question": "In a doubly linked list, the previous pointer is used to move:",
-    "options": [
-      "Forward",
-      "Backward",
-      "Downward",
-      "Randomly"
-    ],
-    "answer": 1
-  },
-  {
-    "question": "Which type of linked list forms a loop?",
-    "options": [
-      "Singly Linked List",
-      "Linear Array",
-      "Circular Linked List",
-      "Static List"
-    ],
-    "answer": 2
-  },
-  {
-    "question": "What is the process of visiting elements one by one called?",
-    "options": [
-      "Compilation",
-      "Traversal",
-      "Translation",
-      "Declaration"
-    ],
-    "answer": 1
-  },
-  {
-    "question": "Adding a new element to a data structure is called:",
-    "options": [
-      "Deletion",
-      "Searching",
-      "Insertion",
-      "Traversal"
-    ],
-    "answer": 2
-  },
-  {
-    "question": "Removing an element from a data structure is called:",
-    "options": [
-      "Insertion",
-      "Deletion",
-      "Searching",
-      "Sorting"
-    ],
-    "answer": 1
-  },
-  {
-    "question": "Finding a required element in a data structure is called:",
-    "options": [
-      "Searching",
-      "Deletion",
-      "Insertion",
-      "Allocation"
-    ],
-    "answer": 0
-  },
-  {
-    "question": "Arranging data in a particular order is called:",
-    "options": [
-      "Traversing",
-      "Sorting",
-      "Deleting",
-      "Linking"
-    ],
-    "answer": 1
-  },
-  {
-    "question": "Which data structure is suitable for storing marks of 50 students?",
-    "options": [
-      "Array",
-      "Single integer variable",
-      "Pointer only",
-      "Compiler"
-    ],
-    "answer": 0
-  },
-  {
-    "question": "Which data structure is suitable when the number of elements may change often?",
-    "options": [
-      "Fixed Array",
-      "Linked List",
-      "Constant",
-      "Character"
-    ],
-    "answer": 1
-  },
-  {
-    "question": "In a circular linked list, traversal can return to:",
-    "options": [
-      "NULL only",
-      "The first node",
-      "A compiler",
-      "An array index"
-    ],
-    "answer": 1
   },
   {
     "question": "Which field in a singly linked list node contains the address of another node?",
@@ -948,5 +648,190 @@ module.exports = [
       "T"
     ],
     "answer": 3
+  },
+
+  // =========================================================
+  // SCRAMBLED WORD ROUND — QUESTIONS 66 TO 95
+  // =========================================================
+
+  {
+    "type": "scrambled",
+    "question": "Which data structure follows the LIFO principle?",
+    "scrambled": "KCTAS",
+    "answer": "STACK"
+  },
+  {
+    "type": "scrambled",
+    "question": "Which data structure follows the FIFO principle?",
+    "scrambled": "EUEQU",
+    "answer": "QUEUE"
+  },
+  {
+    "type": "scrambled",
+    "question": "Which linear structure stores elements in contiguous memory locations?",
+    "scrambled": "RYARA",
+    "answer": "ARRAY"
+  },
+  {
+    "type": "scrambled",
+    "question": "What operation adds an element to a stack?",
+    "scrambled": "HSUP",
+    "answer": "PUSH"
+  },
+  {
+    "type": "scrambled",
+    "question": "What operation removes an element from a stack?",
+    "scrambled": "OPP",
+    "answer": "POP"
+  },
+  {
+    "type": "scrambled",
+    "question": "What operation adds an element to a queue?",
+    "scrambled": "EEUQUNE",
+    "answer": "ENQUEUE"
+  },
+  {
+    "type": "scrambled",
+    "question": "What operation removes an element from a queue?",
+    "scrambled": "EEUQDEE",
+    "answer": "DEQUEUE"
+  },
+  {
+    "type": "scrambled",
+    "question": "What is the topmost element position of a stack called?",
+    "scrambled": "POT",
+    "answer": "TOP"
+  },
+  {
+    "type": "scrambled",
+    "question": "From which end are elements removed in a queue?",
+    "scrambled": "TNORF",
+    "answer": "FRONT"
+  },
+  {
+    "type": "scrambled",
+    "question": "At which end are elements inserted in a queue?",
+    "scrambled": "RAER",
+    "answer": "REAR"
+  },
+  {
+    "type": "scrambled",
+    "question": "What error occurs when inserting into a full stack?",
+    "scrambled": "WOLFROVE",
+    "answer": "OVERFLOW"
+  },
+  {
+    "type": "scrambled",
+    "question": "What error occurs when deleting from an empty stack?",
+    "scrambled": "WOLFREDNU",
+    "answer": "UNDERFLOW"
+  },
+  {
+    "type": "scrambled",
+    "question": "What part of a linked list stores an element and a link?",
+    "scrambled": "EDON",
+    "answer": "NODE"
+  },
+  {
+    "type": "scrambled",
+    "question": "What is the first node pointer of a linked list commonly called?",
+    "scrambled": "DAEH",
+    "answer": "HEAD"
+  },
+  {
+    "type": "scrambled",
+    "question": "What is the final node of a linked list commonly called?",
+    "scrambled": "LIAT",
+    "answer": "TAIL"
+  },
+  {
+    "type": "scrambled",
+    "question": "Which pointer stores the address of the following node?",
+    "scrambled": "TXEN",
+    "answer": "NEXT"
+  },
+  {
+    "type": "scrambled",
+    "question": "What is the process of visiting elements one by one called?",
+    "scrambled": "LASRTEVAR",
+    "answer": "TRAVERSAL"
+  },
+  {
+    "type": "scrambled",
+    "question": "What operation adds a new element to a data structure?",
+    "scrambled": "NITRSEOIN",
+    "answer": "INSERTION"
+  },
+  {
+    "type": "scrambled",
+    "question": "What operation removes an element from a data structure?",
+    "scrambled": "ETNEDLOI",
+    "answer": "DELETION"
+  },
+  {
+    "type": "scrambled",
+    "question": "What process finds a required element in a data structure?",
+    "scrambled": "GNIRHCAES",
+    "answer": "SEARCHING"
+  },
+  {
+    "type": "scrambled",
+    "question": "What process arranges elements in a specific order?",
+    "scrambled": "GNITROS",
+    "answer": "SORTING"
+  },
+  {
+    "type": "scrambled",
+    "question": "Which queue connects its last position back to the first?",
+    "scrambled": "RALUCRIC",
+    "answer": "CIRCULAR"
+  },
+  {
+    "type": "scrambled",
+    "question": "Which queue serves elements based on importance?",
+    "scrambled": "YTIROIRP",
+    "answer": "PRIORITY"
+  },
+  {
+    "type": "scrambled",
+    "question": "Which linear structure allows insertion and deletion at both ends?",
+    "scrambled": "EEQUD",
+    "answer": "DEQUE"
+  },
+  {
+    "type": "scrambled",
+    "question": "Which linked list allows movement in both directions?",
+    "scrambled": "YLBUDOL",
+    "answer": "DOUBLY"
+  },
+  {
+    "type": "scrambled",
+    "question": "Which linked list has the last node linked to the first node?",
+    "scrambled": "RALUCRIC",
+    "answer": "CIRCULAR"
+  },
+  {
+    "type": "scrambled",
+    "question": "What is the fixed numbered location of an array element called?",
+    "scrambled": "XEDNI",
+    "answer": "INDEX"
+  },
+  {
+    "type": "scrambled",
+    "question": "What value indicates the absence of a valid link in a linked list?",
+    "scrambled": "LLUN",
+    "answer": "NULL"
+  },
+  {
+    "type": "scrambled",
+    "question": "What memory allocation method occurs while a program is running?",
+    "scrambled": "CIMANYD",
+    "answer": "DYNAMIC"
+  },
+  {
+    "type": "scrambled",
+    "question": "What data structure consists of connected nodes?",
+    "scrambled": "DEKNIL TSIL",
+    "answer": "LINKED LIST"
   }
 ];
