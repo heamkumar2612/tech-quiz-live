@@ -2,6 +2,7 @@ const socket=io();
 const $=id=>document.getElementById(id);
 
 let current=null,tick=null;
+let violationPlayers=new Map();
 
 function show(id){
  ["auth","host","hostFinal"].forEach(
@@ -104,8 +105,7 @@ function runTimer(q){
     `scaleX(${readingLeft/q.readingTime})`;
 
    if(
-    !hostMessage.includes("APP SWITCH") &&
-    !hostMessage.includes("BLOCKED")
+    !hostMessage.includes("ANTI-CHEAT ALERTS")
    ){
     $("hostStatus").textContent=
      `📖 READING TIME - ${readingLeft}`;
@@ -129,8 +129,7 @@ function runTimer(q){
    `scaleX(${left/q.duration})`;
 
   if(
-   !hostMessage.includes("APP SWITCH") &&
-   !hostMessage.includes("BLOCKED")
+   !hostMessage.includes("ANTI-CHEAT ALERTS")
   ){
    $("hostStatus").textContent=
     "Students are answering...";
@@ -202,6 +201,8 @@ socket.on("reveal",d=>{
 
 });
 
+
+// FINAL RANKING
 
 function ranks(list,target){
 
@@ -276,21 +277,28 @@ socket.on("quiz:reset",()=>
 );
 
 
-// ANTI-CHEAT HOST WARNING
+// ANTI-CHEAT HOST WARNING LIST
 
 socket.on("host:violation",d=>{
 
- if(d.warnings>=2){
+ const key=d.registerNo;
 
-  $("hostStatus").textContent=
-   `🚫 BLOCKED: ${d.name} | Roll No: ${d.registerNo}`;
+ violationPlayers.set(key,{
+  name:d.name,
+  registerNo:d.registerNo,
+  warnings:d.warnings
+ });
 
- }
- else{
+ const alerts=[
+  ...violationPlayers.values()
+ ];
 
-  $("hostStatus").textContent=
-   `⚠️ APP SWITCH: ${d.name} | Roll No: ${d.registerNo} | Warning ${d.warnings}/2`;
-
- }
+ $("hostStatus").innerHTML=
+  "🚨 ANTI-CHEAT ALERTS<br>" +
+  alerts.map(p=>
+   p.warnings>=2
+    ?`🚫 ${p.name} | Roll ${p.registerNo} | BLOCKED`
+    :`⚠️ ${p.name} | Roll ${p.registerNo} | Warning ${p.warnings}/2`
+  ).join("<br>");
 
 });
