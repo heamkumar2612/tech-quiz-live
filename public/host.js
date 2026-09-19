@@ -15,6 +15,10 @@ let violationPlayers =
 
 let joinedPlayers = [];
 
+let pendingPlayers = [];
+
+let selectedPlayer = null;
+
 
 // ============================================================
 // ESCAPE PLAYER / QUESTION TEXT
@@ -118,8 +122,12 @@ $("authBtn").onclick = () => {
       joinedPlayers =
         r.state.players || [];
 
+      pendingPlayers =
+        r.state.pending || [];
+
 
       renderPlayers();
+      renderPendingPlayers();
 
     }
   );
@@ -191,8 +199,12 @@ socket.on(
     joinedPlayers =
       d.players || [];
 
+    pendingPlayers =
+      d.pending || [];
+
 
     renderPlayers();
+    renderPendingPlayers();
 
   }
 );
@@ -259,10 +271,10 @@ function renderPlayers() {
 
 
             <button
-              class="danger removePlayerBtn"
+              class="secondary participantBtn"
               data-id="${safeId}"
             >
-              REMOVE
+              DETAILS
             </button>
 
           </div>
@@ -275,7 +287,7 @@ function renderPlayers() {
 
   document
     .querySelectorAll(
-      ".removePlayerBtn"
+      ".participantBtn"
     )
     .forEach(
       btn => {
@@ -300,18 +312,7 @@ function renderPlayers() {
           }
 
 
-          if (
-            !confirm(
-              `Remove ${player.name} from quiz?`
-            )
-          ) {
-
-            return;
-
-          }
-
-
-          removePlayer(player);
+          openParticipantModal(player);
 
         };
 
@@ -503,7 +504,7 @@ function runTimer(q) {
       }
 
 
-      // 20 SECOND ANSWER TIME
+      // Server-authoritative answer countdown
 
       const left =
         Math.max(
@@ -650,20 +651,6 @@ socket.on(
 
 
     show("host");
-
-
-    // HIDE NORMAL PLAYER REMOVE LIST
-    // AFTER QUIZ STARTS
-
-    if (
-      $("playerManage")
-    ) {
-
-      $("playerManage")
-        .classList
-        .add("hidden");
-
-    }
 
 
     $("hostQnum").textContent =
@@ -1177,3 +1164,47 @@ function renderViolationPlayers() {
     );
 
 }
+
+function renderPendingPlayers() {
+  const target = $("pendingPlayers");
+  if (!target) return;
+  target.innerHTML = pendingPlayers.length ? pendingPlayers.map(p => `
+    <div class="rankRow">
+      <span><strong>${escapeHTML(p.name)}</strong><small> · ${escapeHTML(p.registerNo)}</small></span>
+      <span><button class="allowPlayerBtn" data-id="${escapeHTML(p.id)}">ALLOW</button> <button class="danger rejectPlayerBtn" data-id="${escapeHTML(p.id)}">REJECT</button></span>
+    </div>`).join("") : "<p>No pending requests</p>";
+  target.querySelectorAll(".allowPlayerBtn").forEach(button => button.onclick = () => admission(button.dataset.id, "host:allowPlayer"));
+  target.querySelectorAll(".rejectPlayerBtn").forEach(button => button.onclick = () => admission(button.dataset.id, "host:rejectPlayer"));
+}
+
+function admission(playerId, event) {
+  socket.emit(event, { playerId }, result => {
+    if (!result?.ok) alert(result?.error || "Request already handled");
+  });
+}
+
+function openParticipantModal(player) {
+  selectedPlayer = player;
+  $("participantDetails").innerHTML = `
+    <p><strong>Name:</strong> ${escapeHTML(player.name)}</p>
+    <p><strong>Roll No:</strong> ${escapeHTML(player.registerNo)}</p>
+    <p><strong>Score:</strong> ${player.score}</p>
+    <p><strong>Current Question:</strong> ${player.currentQuestion || "Lobby"}</p>
+    <p><strong>Status:</strong> ${escapeHTML(player.state)}${player.answered ? " / Answered" : ""}${player.blocked ? " / Blocked" : ""}</p>`;
+  $("blockParticipantBtn").disabled = !current || player.blocked;
+  $("participantModal").classList.remove("hidden");
+}
+
+$("closeParticipantBtn").onclick = () => $("participantModal").classList.add("hidden");
+$("blockParticipantBtn").onclick = () => {
+  if (!selectedPlayer) return;
+  socket.emit("host:blockPlayer", { playerId: selectedPlayer.id }, result => {
+    if (!result?.ok) alert(result?.error || "Could not block participant");
+    else $("participantModal").classList.add("hidden");
+  });
+};
+$("removeParticipantBtn").onclick = () => {
+  if (!selectedPlayer) return;
+  removePlayer(selectedPlayer);
+  $("participantModal").classList.add("hidden");
+};

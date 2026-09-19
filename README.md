@@ -1,12 +1,11 @@
 # Tech Quiz Live
 
-A real-time 50-player quiz using Node.js, Express and Socket.IO.
+A real-time quiz using Node.js, Express and Socket.IO.
 
 ## Scoring
-Correct answer: 500 base points + up to 500 speed points.
-Wrong answer: 0.
-With a 20-second timer:
-`points = round(500 + 500 * (time remaining / 20))`
+MCQ questions run for 5 seconds and score correct answers 10, 8, 6, 4, or 2 points by server-measured elapsed time.
+Scrambled-word questions run for 10 seconds and score correct answers from 10 down to 1 point by elapsed second.
+Wrong, blocked, unanswered, and timed-out questions score 0.
 
 ## Run locally
 1. Install Node.js 18+.

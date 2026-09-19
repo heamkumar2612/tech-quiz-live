@@ -263,6 +263,26 @@ button:disabled {
   display: none !important;
 }
 
+.modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: #020817cc;
+  z-index: 10;
+}
+
+.modalCard {
+  max-width: 520px;
+}
+
+.modalActions {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+}
+
 
 /* ============================================================
    LOBBY

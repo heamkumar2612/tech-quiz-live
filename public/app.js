@@ -12,6 +12,8 @@ let answered = false;
 
 let tick = null;
 
+let playerState = "";
+
 
 // BLOCK IS ONLY FOR CURRENT QUESTION
 
@@ -114,6 +116,11 @@ $("joinBtn").onclick = () => {
 
       show("lobby");
 
+      playerState = r.state || "LOBBY";
+      $("lobbyStatus").textContent = playerState === "WAITING"
+        ? "Waiting for host approval..."
+        : "Waiting for the host to start...";
+
     }
   );
 
@@ -144,6 +151,10 @@ socket.on(
   "quiz:started",
 
   () => {
+
+    if (playerState === "WAITING" || playerState === "REJECTED") {
+      return;
+    }
 
     $("status").textContent =
       "Get ready...";
@@ -334,7 +345,7 @@ function runTimer(payload) {
       }
 
 
-      // 20 SECOND ANSWERING TIME
+      // Server-authoritative answer countdown
 
       const left =
         Math.max(
@@ -833,6 +844,13 @@ socket.on(
   }
 );
 
+socket.on("player:blocked", d => {
+  if (!current || d.index !== current.index) return;
+  questionBlocked = true;
+  disableOptions();
+  $("status").textContent = d.message || "Your answer is blocked for this question.";
+});
+
 
 // ============================================================
 // REVEAL ANSWER
@@ -1237,7 +1255,7 @@ window.addEventListener(
 socket.on(
   "player:removed",
 
-  () => {
+  d => {
 
     clearInterval(tick);
 
@@ -1261,7 +1279,32 @@ socket.on(
 
 
     $("joinMsg").textContent =
-      "🚫 You were removed by the host";
+      d?.message ||
+      "You were removed by the host";
 
   }
 );
+
+socket.on("player:lobby", () => {
+  playerState = "LOBBY";
+  show("lobby");
+});
+
+socket.on("player:waiting", d => {
+  playerState = "WAITING";
+  show("lobby");
+  $("lobbyStatus").textContent = d?.message || "Waiting for host approval...";
+});
+
+socket.on("player:approved", d => {
+  playerState = "ACTIVE";
+  show("lobby");
+  $("lobbyStatus").textContent = d?.message || "Approved. You will join from the next question.";
+});
+
+socket.on("player:rejected", d => {
+  playerState = "REJECTED";
+  clearInterval(tick);
+  show("lobby");
+  $("lobbyStatus").textContent = d?.message || "Your request was rejected by the host.";
+});

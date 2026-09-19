@@ -134,7 +134,7 @@
             id="hostTimer"
             class="timer"
           >
-            20
+            5
           </div>
 
 
@@ -147,8 +147,7 @@
             Q1 - Q65:
             MCQ options appear here.
 
-            Q66 - Q95:
-            Scrambled word appears here.
+            Scrambled word questions appear here.
           -->
 
           <div
@@ -195,6 +194,12 @@
                 No players joined
               </p>
 
+            </div>
+
+            <h2>Pending Participants</h2>
+
+            <div id="pendingPlayers">
+              <p>No pending requests</p>
             </div>
 
 
@@ -266,6 +271,18 @@
 
 
     </section>
+
+    <div id="participantModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="card modalCard">
+        <h2>Participant Details</h2>
+        <div id="participantDetails"></div>
+        <div class="modalActions">
+          <button id="blockParticipantBtn">BLOCK CURRENT QUESTION</button>
+          <button id="removeParticipantBtn" class="danger">REMOVE PARTICIPANT</button>
+          <button id="closeParticipantBtn" class="secondary">CLOSE</button>
+        </div>
+      </div>
+    </div>
 
 
 
