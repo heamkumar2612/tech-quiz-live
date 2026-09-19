@@ -69,6 +69,20 @@ function isScrambledQuestion() {
 
 }
 
+function renderPlayerIdentity() {
+  if (!me) return;
+  [
+    ["lobbyIdentityName", "lobbyIdentityRoll"],
+    ["gameIdentityName", "gameIdentityRoll"],
+    ["finalIdentityName", "finalIdentityRoll"]
+  ].forEach(([nameId, rollId]) => {
+    const name = $(nameId);
+    const roll = $(rollId);
+    if (name) name.textContent = `👤 ${me.name}`;
+    if (roll) roll.textContent = `Roll No: ${me.registerNo}`;
+  });
+}
+
 
 // ============================================================
 // PLAYER JOIN
@@ -108,6 +122,8 @@ $("joinBtn").onclick = () => {
 
       $("playerName").textContent =
         me.name;
+
+      renderPlayerIdentity();
 
 
       $("joinMsg").textContent =

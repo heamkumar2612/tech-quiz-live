@@ -295,6 +295,39 @@ button:disabled {
 }
 
 
+.playerIdentity {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 10px 0 16px;
+  color: #eaf6ff;
+  font-size: 15px;
+}
+
+
+.playerIdentity strong {
+  color: #63e8ff;
+  font-family: Orbitron;
+}
+
+
+.playerIdentity span {
+  color: #a9b9d8;
+}
+
+
+#gameIdentity {
+  margin: 6px 0 0;
+  align-items: flex-start;
+  font-size: 12px;
+}
+
+
+#gameIdentity strong {
+  font-size: 13px;
+}
+
+
 .pulse {
   width: 18px;
 
