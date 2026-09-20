@@ -303,6 +303,7 @@ function runTimer(payload) {
 
 
   const answerEnd =
+    payload.deadline ||
     answerStart +
     payload.duration * 1000;
 

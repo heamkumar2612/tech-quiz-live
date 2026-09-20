@@ -441,6 +441,7 @@ function runTimer(q) {
 
 
   const answerEnd =
+    q.deadline ||
     answerStart +
     q.duration * 1000;
 
