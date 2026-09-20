@@ -931,6 +931,69 @@ function podium(
 
 
 // ============================================================
+// EXPORT FINAL RESULTS
+// ============================================================
+
+function csvCell(value) {
+
+  return `"${String(value ?? "").replaceAll('"', '""')}"`;
+
+}
+
+
+function exportResults(list) {
+
+  const header = [
+    "Rank",
+    "Participant Name",
+    "Roll Number",
+    "Score",
+    "Correct Answers",
+    "Answered Questions",
+    "Status"
+  ];
+
+  const rows = list.map(
+    (p, i) => [
+      i + 1,
+      p.name,
+      p.registerNo,
+      p.score,
+      p.correct,
+      p.answeredCount ?? 0,
+      p.state
+    ]
+  );
+
+  const csv = [header, ...rows]
+    .map(row => row.map(csvCell).join(","))
+    .join("\r\n");
+
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `tech-quiz-results-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+
+}
+
+
+$("exportResultsBtn").onclick = () => {
+
+  if (window.finalLeaderboard?.length) {
+
+    exportResults(window.finalLeaderboard);
+
+  }
+
+};
+
+
+// ============================================================
 // QUIZ FINISHED
 // ============================================================
 
@@ -940,6 +1003,8 @@ socket.on(
   d => {
 
     clearInterval(tick);
+
+    window.finalLeaderboard = d.leaderboard || [];
 
 
     show(

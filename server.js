@@ -25,7 +25,7 @@ function normalizeAnswer(value) { return String(value || "").trim().replace(/\s+
 function currentQuestion() { return questions[quiz.index] || null; }
 function currentAnswered(player) { return quiz.answers.has(player.id); }
 function publicPlayer(player) {
-  return { id: player.id, name: player.name, registerNo: player.registerNo, score: player.score, correct: player.correct, answered: currentAnswered(player), state: player.state, blocked: player.blockedQuestions.has(quiz.index), currentQuestion: quiz.index >= 0 ? quiz.index + 1 : null };
+  return { id: player.id, name: player.name, registerNo: player.registerNo, score: player.score, correct: player.correct, answered: currentAnswered(player), answeredCount: player.answered, state: player.state, blocked: player.blockedQuestions.has(quiz.index), currentQuestion: quiz.index >= 0 ? quiz.index + 1 : null };
 }
 function publicPlayers() { return [...players.values()].filter(p => p.state !== STATES.WAITING && p.state !== STATES.REJECTED && p.state !== STATES.REMOVED).map(publicPlayer); }
 function pendingPlayers() { return [...players.values()].filter(p => p.state === STATES.WAITING).map(publicPlayer); }
