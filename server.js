@@ -12,8 +12,9 @@ app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public", "index.ht
 
 const QUIZ_CODE = process.env.QUIZ_CODE || "482917";
 const MCQ_TIME = 5;
-const SCRAMBLED_TIME = 10;
-const READING_TIME = 5;
+const SCRAMBLED_TIME = 5;
+const MCQ_READING_TIME = 5;
+const SCRAMBLED_READING_TIME = 5;
 const STATES = Object.freeze({ LOBBY: "LOBBY", WAITING: "WAITING", ACTIVE: "ACTIVE", REJECTED: "REJECTED", REMOVED: "REMOVED" });
 let players = new Map();
 let quiz = createQuiz();
@@ -21,6 +22,7 @@ let quiz = createQuiz();
 function createQuiz() { return { started: false, finished: false, index: -1, startedAt: 0, deadline: 0, timer: null, answers: new Map() }; }
 function isScrambledQuestion(question) { return question && question.type === "scrambled"; }
 function questionDuration(question) { return isScrambledQuestion(question) ? SCRAMBLED_TIME : MCQ_TIME; }
+function questionReadingTime(question) { return isScrambledQuestion(question) ? SCRAMBLED_READING_TIME : MCQ_READING_TIME; }
 function normalizeAnswer(value) { return String(value || "").trim().replace(/\s+/g, " ").toUpperCase(); }
 function currentQuestion() { return questions[quiz.index] || null; }
 function currentAnswered(player) { return quiz.answers.has(player.id); }
@@ -35,7 +37,7 @@ function questionPayload() {
   const question = currentQuestion();
   if (!question) return null;
   const scrambled = isScrambledQuestion(question);
-  return { index: quiz.index, total: questions.length, type: scrambled ? "scrambled" : "mcq", question: question.question, options: scrambled ? null : question.options, scrambled: scrambled ? question.scrambled : null, duration: questionDuration(question), readingTime: READING_TIME, startedAt: quiz.startedAt, deadline: quiz.deadline };
+  return { index: quiz.index, total: questions.length, type: scrambled ? "scrambled" : "mcq", question: question.question, options: scrambled ? null : question.options, scrambled: scrambled ? question.scrambled : null, duration: questionDuration(question), readingTime: questionReadingTime(question), startedAt: quiz.startedAt, deadline: quiz.deadline };
 }
 function emitToActive(event, payload) {
   for (const player of players.values()) if (player.state === STATES.ACTIVE) io.to(player.id).emit(event, payload);
@@ -44,10 +46,10 @@ function emitToActive(event, payload) {
 function startQuestion() {
   clearTimeout(quiz.timer);
   quiz.answers = new Map();
-  quiz.startedAt = Date.now() + READING_TIME * 1000;
+  quiz.startedAt = Date.now() + questionReadingTime(currentQuestion()) * 1000;
   quiz.deadline = quiz.startedAt + questionDuration(currentQuestion()) * 1000;
   emitToActive("question", questionPayload());
-  quiz.timer = setTimeout(revealQuestion, (READING_TIME + questionDuration(currentQuestion())) * 1000 + 50);
+  quiz.timer = setTimeout(revealQuestion, (questionReadingTime(currentQuestion()) + questionDuration(currentQuestion())) * 1000 + 50);
   broadcastLobby();
 }
 function revealQuestion() {

@@ -762,7 +762,13 @@ header span {
 
 
 .scrambledInput {
+  display: block;
+
+  width: 100%;
+
   max-width: 520px;
+
+  box-sizing: border-box;
 
   margin:
     15px auto;
