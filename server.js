@@ -12,7 +12,7 @@ app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public", "index.ht
 
 const QUIZ_CODE = process.env.QUIZ_CODE || "482917";
 const MCQ_TIME = 5;
-const SCRAMBLED_TIME = 5;
+const SCRAMBLED_TIME = 8;
 const MCQ_READING_TIME = 5;
 const SCRAMBLED_READING_TIME = 5;
 const STATES = Object.freeze({ LOBBY: "LOBBY", WAITING: "WAITING", ACTIVE: "ACTIVE", REJECTED: "REJECTED", REMOVED: "REMOVED" });
